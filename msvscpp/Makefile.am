@@ -1,0 +1,28 @@
+MSVSCPP_FILES = \
+	bfoverlay_test_error/bfoverlay_test_error.vcproj \
+	bfoverlay_test_handle/bfoverlay_test_handle.vcproj \
+	bfoverlay_test_notify/bfoverlay_test_notify.vcproj \
+	bfoverlay_test_support/bfoverlay_test_support.vcproj \
+	bfoverlaymount/bfoverlaymount.vcproj \
+	libbfio/libbfio.vcproj \
+	libbfoverlay/libbfoverlay.vcproj \
+	libcdata/libcdata.vcproj \
+	libcerror/libcerror.vcproj \
+	libcfile/libcfile.vcproj \
+	libclocale/libclocale.vcproj \
+	libcnotify/libcnotify.vcproj \
+	libcpath/libcpath.vcproj \
+	libcsplit/libcsplit.vcproj \
+	libcthreads/libcthreads.vcproj \
+	libuna/libuna.vcproj \
+	libbfoverlay.sln
+
+EXTRA_DIST = \
+	$(MSVSCPP_FILES)
+
+MAINTAINERCLEANFILES = \
+	Makefile.in
+
+distclean: clean
+	/bin/rm -f Makefile
+

@@ -1,0 +1,48 @@
+Source: libbfoverlay
+Priority: extra
+Maintainer: Joachim Metz <joachim.metz@gmail.com>
+Build-Depends: debhelper (>= 9), dh-autoreconf, pkg-config, libfuse-dev
+Standards-Version: 4.1.4
+Section: libs
+Homepage: https://github.com/libyal/libbfoverlay
+Vcs-Git: https://github.com/libyal/libbfoverlay.git
+
+Package: libbfoverlay
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Conflicts: libbfoverlay1
+Replaces: libbfoverlay1
+Suggests: libbfoverlay-dbg
+Description: Library to provide basic file overlay support
+ libbfoverlay is a library to provide basic file overlay support.
+
+Package: libbfoverlay-dbg
+Architecture: any
+Section: debug
+Depends: libbfoverlay (= ${binary:Version}), ${misc:Depends}
+Description: Debugging symbols for libbfoverlay
+ Debugging symbols for libbfoverlay.
+
+Package: libbfoverlay-dev
+Section: libdevel
+Architecture: any
+Depends: libbfoverlay (= ${binary:Version}), ${misc:Depends}
+Description: Header files and libraries for developing applications for libbfoverlay
+ Header files and libraries for developing applications for libbfoverlay.
+
+Package: libbfoverlay-tools
+Section: utils
+Architecture: any
+Depends: libbfoverlay (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Conflicts: libbfoverlay-utils
+Replaces: libbfoverlay-utils
+Description: Several tools for basic file overlays
+ Several tools for basic file overlays.
+
+Package: libbfoverlay-tools-dbg
+Section: debug
+Architecture: any
+Depends: libbfoverlay-tools (= ${binary:Version}), ${misc:Depends}
+Description: Debugging symbols for libbfoverlay-tools
+ Debugging symbols for libbfoverlay-tools.
+

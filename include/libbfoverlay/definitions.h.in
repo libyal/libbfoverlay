@@ -1,0 +1,55 @@
+/*
+ * Definitions for libbfoverlay
+ *
+ * Copyright (C) 2020, Joachim Metz <joachim.metz@gmail.com>
+ *
+ * Refer to AUTHORS for acknowledgements.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+#if !defined( _LIBBFOVERLAY_DEFINITIONS_H )
+#define _LIBBFOVERLAY_DEFINITIONS_H
+
+#include <libbfoverlay/types.h>
+
+#define LIBBFOVERLAY_VERSION			@VERSION@
+
+/* The libbfoverlay version string
+ */
+#define LIBBFOVERLAY_VERSION_STRING		"@VERSION@"
+
+/* The access flags definitions
+ * bit 1					set to 1 for read access
+ * bit 2					set to 1 for write access
+ * bit 3					set to 1 to truncate an existing file on write
+ * bit 4-8					not used
+ */
+enum LIBBFOVERLAY_ACCESS_FLAGS
+{
+	LIBBFOVERLAY_ACCESS_FLAG_READ		= 0x01,
+	LIBBFOVERLAY_ACCESS_FLAG_WRITE		= 0x02,
+	LIBBFOVERLAY_ACCESS_FLAG_TRUNCATE	= 0x04
+};
+
+/* The file access macros
+ */
+#define LIBBFOVERLAY_OPEN_READ			( LIBBFOVERLAY_ACCESS_FLAG_READ )
+#define LIBBFOVERLAY_OPEN_WRITE			( LIBBFOVERLAY_ACCESS_FLAG_WRITE )
+#define LIBBFOVERLAY_OPEN_READ_WRITE		( LIBBFOVERLAY_ACCESS_FLAG_READ | LIBBFOVERLAY_ACCESS_FLAG_WRITE )
+#define LIBBFOVERLAY_OPEN_WRITE_TRUNCATE	( LIBBFOVERLAY_ACCESS_FLAG_WRITE | LIBBFOVERLAY_ACCESS_FLAG_TRUNCATE )
+#define LIBBFOVERLAY_OPEN_READ_WRITE_TRUNCATE	( LIBBFOVERLAY_ACCESS_FLAG_READ | LIBBFOVERLAY_ACCESS_FLAG_WRITE | LIBBFOVERLAY_ACCESS_FLAG_TRUNCATE )
+
+#endif /* !defined( _LIBBFOVERLAY_DEFINITIONS_H ) */
+

@@ -1,0 +1,27 @@
+TODO:
+* tests
+** add handle tests
+
+* add descriptor file support
+
+* add support to virtualize 0-byte filled data
+** add base layer
+** add base layer set size
+
+* add support to overlay volume as specific offset
+* add support to overlay wiped vshadow catalog data
+* add support to virtualize missing NTFS backup volume header
+** file data (read-only) overlay layers
+** volume offset scenario
+
+* add support to create write "shadow" file
+** add write layer
+
+* add support to track reads and writes
+
+* add support to read and cache in memory for slow media?
+
+20201124
+* see `git log' for more recent change log
+* Initial version based on libbfio and libsigscan
+
