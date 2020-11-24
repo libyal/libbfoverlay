@@ -1,0 +1,12 @@
+libbfoverlay is a library to provide basic file overlay support.
+
+Project information:
+
+* Status: experimental
+* Licence: LGPLv3+
+
+For more information see:
+
+* Project documentation: https://github.com/libyal/libbfoverlay/wiki/Home
+* How to build from source: https://github.com/libyal/libbfoverlay/wiki/Building
+
