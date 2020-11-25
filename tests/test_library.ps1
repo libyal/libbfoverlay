@@ -6,7 +6,7 @@ $ExitSuccess = 0
 $ExitFailure = 1
 $ExitIgnore = 77
 
-$LibraryTests = "error notify support"
+$LibraryTests = "descriptor_file error layer notify support"
 $LibraryTestsWithInput = "handle"
 $OptionSets = ""
 

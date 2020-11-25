@@ -2,7 +2,7 @@ AC_PREREQ( 2.59 )
 
 AC_INIT(
  [libbfoverlay],
- [20201124],
+ [20201125],
  [joachim.metz@gmail.com])
 
 AC_CONFIG_SRCDIR(
@@ -96,6 +96,9 @@ AX_LIBCPATH_CHECK_ENABLE
 dnl Check if libbfio or required headers and functions are available
 AX_LIBBFIO_CHECK_ENABLE
 
+dnl Check if libfvalue or required headers and functions are available
+AX_LIBFVALUE_CHECK_ENABLE
+
 dnl Check if libbfoverlay required headers and functions are available
 AX_LIBBFOVERLAY_CHECK_LOCAL
 
@@ -116,7 +119,7 @@ CFLAGS="$CFLAGS -Wall";
 
 dnl Check if requires and build requires should be set in spec file
 AS_IF(
- [test "x$ac_cv_libcerror" = xyes || test "x$ac_cv_libcthreads" = xyes || test "x$ac_cv_libcdata" = xyes || test "x$ac_cv_libclocale" = xyes || test "x$ac_cv_libcnotify" = xyes || test "x$ac_cv_libcsplit" = xyes || test "x$ac_cv_libuna" = xyes || test "x$ac_cv_libcfile" = xyes || test "x$ac_cv_libcpath" = xyes || test "x$ac_cv_libbfio" = xyes],
+ [test "x$ac_cv_libcerror" = xyes || test "x$ac_cv_libcthreads" = xyes || test "x$ac_cv_libcdata" = xyes || test "x$ac_cv_libclocale" = xyes || test "x$ac_cv_libcnotify" = xyes || test "x$ac_cv_libcsplit" = xyes || test "x$ac_cv_libuna" = xyes || test "x$ac_cv_libcfile" = xyes || test "x$ac_cv_libcpath" = xyes || test "x$ac_cv_libbfio" = xyes || test "x$ac_cv_libfvalue" = xyes],
  [AC_SUBST(
   [libbfoverlay_spec_requires],
   [Requires:])
@@ -153,6 +156,7 @@ AC_CONFIG_FILES([libuna/Makefile])
 AC_CONFIG_FILES([libcfile/Makefile])
 AC_CONFIG_FILES([libcpath/Makefile])
 AC_CONFIG_FILES([libbfio/Makefile])
+AC_CONFIG_FILES([libfvalue/Makefile])
 AC_CONFIG_FILES([libbfoverlay/Makefile])
 AC_CONFIG_FILES([bfoverlaytools/Makefile])
 AC_CONFIG_FILES([po/Makefile.in])
@@ -190,6 +194,7 @@ Building:
    libcfile support:                               $ac_cv_libcfile
    libcpath support:                               $ac_cv_libcpath
    libbfio support:                                $ac_cv_libbfio
+   libfvalue support:                              $ac_cv_libfvalue
    FUSE support:                                   $ac_cv_libfuse
 
 Features:

@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9,00"
-	Name="bfoverlay_test_handle"
-	ProjectGUID="{1EA44316-D172-4F53-8CD0-403E26DB6684}"
-	RootNamespace="bfoverlay_test_handle"
+	Name="bfoverlay_test_descriptor_file"
+	ProjectGUID="{D31CBC13-0283-4976-8682-8DC2DFDB11A6}"
+	RootNamespace="bfoverlay_test_descriptor_file"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="131072"
 	>
@@ -176,15 +176,11 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
+				RelativePath="..\..\tests\bfoverlay_test_descriptor_file.c"
+				>
+			</File>
+			<File
 				RelativePath="..\..\tests\bfoverlay_test_functions.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\tests\bfoverlay_test_getopt.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\tests\bfoverlay_test_handle.c"
 				>
 			</File>
 			<File
@@ -202,10 +198,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\tests\bfoverlay_test_getopt.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\tests\bfoverlay_test_libbfio.h"
 				>
 			</File>
@@ -215,18 +207,6 @@
 			</File>
 			<File
 				RelativePath="..\..\tests\bfoverlay_test_libcerror.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\tests\bfoverlay_test_libclocale.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\tests\bfoverlay_test_libcnotify.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\tests\bfoverlay_test_libuna.h"
 				>
 			</File>
 			<File

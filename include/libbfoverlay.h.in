@@ -31,6 +31,10 @@
 
 #include <stdio.h>
 
+#if defined( LIBBFOVERLAY_HAVE_BFIO )
+#include <libbfio.h>
+#endif
+
 #if defined( __cplusplus )
 extern "C" {
 #endif

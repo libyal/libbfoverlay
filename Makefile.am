@@ -13,6 +13,7 @@ SUBDIRS = \
 	libcfile \
 	libcpath \
 	libbfio \
+	libfvalue \
 	libbfoverlay \
 	bfoverlaytools \
 	po \
@@ -74,6 +75,7 @@ library:
 	(cd $(srcdir)/libcfile && $(MAKE) $(AM_MAKEFLAGS))
 	(cd $(srcdir)/libcpath && $(MAKE) $(AM_MAKEFLAGS))
 	(cd $(srcdir)/libbfio && $(MAKE) $(AM_MAKEFLAGS))
+	(cd $(srcdir)/libfvalue && $(MAKE) $(AM_MAKEFLAGS))
 	(cd $(srcdir)/libbfoverlay && $(MAKE) $(AM_MAKEFLAGS))
 	(cd $(srcdir)/po && $(MAKE) $(AM_MAKEFLAGS))
 
@@ -100,6 +102,7 @@ splint:
 	(cd $(srcdir)/libcfile && $(MAKE) splint $(AM_MAKEFLAGS))
 	(cd $(srcdir)/libcpath && $(MAKE) splint $(AM_MAKEFLAGS))
 	(cd $(srcdir)/libbfio && $(MAKE) splint $(AM_MAKEFLAGS))
+	(cd $(srcdir)/libfvalue && $(MAKE) splint $(AM_MAKEFLAGS))
 	(cd $(srcdir)/libbfoverlay && $(MAKE) splint $(AM_MAKEFLAGS))
 	(cd $(srcdir)/bfoverlaytools && $(MAKE) splint $(AM_MAKEFLAGS))
 	(cd $(srcdir)/tests && $(MAKE) splint $(AM_MAKEFLAGS))

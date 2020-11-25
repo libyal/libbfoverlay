@@ -1,6 +1,8 @@
 MSVSCPP_FILES = \
+	bfoverlay_test_descriptor_file/bfoverlay_test_descriptor_file.vcproj \
 	bfoverlay_test_error/bfoverlay_test_error.vcproj \
 	bfoverlay_test_handle/bfoverlay_test_handle.vcproj \
+	bfoverlay_test_layer/bfoverlay_test_layer.vcproj \
 	bfoverlay_test_notify/bfoverlay_test_notify.vcproj \
 	bfoverlay_test_support/bfoverlay_test_support.vcproj \
 	bfoverlaymount/bfoverlaymount.vcproj \
@@ -14,6 +16,7 @@ MSVSCPP_FILES = \
 	libcpath/libcpath.vcproj \
 	libcsplit/libcsplit.vcproj \
 	libcthreads/libcthreads.vcproj \
+	libfvalue/libfvalue.vcproj \
 	libuna/libuna.vcproj \
 	libbfoverlay.sln
 

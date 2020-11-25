@@ -25,6 +25,7 @@
 #include <common.h>
 #include <types.h>
 
+#include "libbfoverlay_descriptor_file.h"
 #include "libbfoverlay_extern.h"
 #include "libbfoverlay_libbfio.h"
 #include "libbfoverlay_libcerror.h"
@@ -39,6 +40,10 @@ typedef struct libbfoverlay_internal_handle libbfoverlay_internal_handle_t;
 
 struct libbfoverlay_internal_handle
 {
+	/* The descriptor file
+	 */
+	libbfoverlay_descriptor_file_t *descriptor_file;
+
 	/* The current offset
 	 */
 	off64_t current_offset;
@@ -54,6 +59,18 @@ struct libbfoverlay_internal_handle
 	/* Value to indicate if the file IO handle was opened inside the library
 	 */
 	uint8_t file_io_handle_opened_in_library;
+
+	/* The data file IO pool
+	 */
+	libbfio_pool_t *data_file_io_pool;
+
+	/* Value to indicate if the file IO pool was created inside the library
+	 */
+	uint8_t data_file_io_pool_created_in_library;
+
+	/* The maximum number of open handles in the file IO pool
+	 */
+	int maximum_number_of_open_handles;
 
 	/* The size
 	 */
@@ -108,6 +125,21 @@ int libbfoverlay_handle_open_file_io_handle(
      libbfoverlay_handle_t *handle,
      libbfio_handle_t *file_io_handle,
      int access_flags,
+     libcerror_error_t **error );
+
+int libbfoverlay_internal_handle_open_data_files(
+     libbfoverlay_internal_handle_t *internal_handle,
+     libcerror_error_t **error );
+
+LIBBFOVERLAY_EXTERN \
+int libbfoverlay_handle_open_data_files(
+     libbfoverlay_handle_t *handle,
+     libcerror_error_t **error );
+
+LIBBFOVERLAY_EXTERN \
+int libbfoverlay_handle_open_data_files_file_io_pool(
+     libbfoverlay_handle_t *handle,
+     libbfio_pool_t *file_io_pool,
      libcerror_error_t **error );
 
 LIBBFOVERLAY_EXTERN \

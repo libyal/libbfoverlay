@@ -1,25 +1,21 @@
 TODO:
-* tests
-** add handle tests
-
-* add descriptor file support
-
-* add support to virtualize 0-byte filled data
-** add base layer
-** add base layer set size
-
-* add support to overlay volume as specific offset
-* add support to overlay wiped vshadow catalog data
-* add support to virtualize missing NTFS backup volume header
+* library
+** add support to read from data files
+** complete open data file IO handles function
 ** file data (read-only) overlay layers
-** volume offset scenario
+** add virtual write layer
+** add support to track reads and writes in a log file?
+** add support to read and cache in memory for slow media?
 
-* add support to create write "shadow" file
-** add write layer
+* tests
+** complete handle tests
 
-* add support to track reads and writes
-
-* add support to read and cache in memory for slow media?
+* document examples
+** virtualize 0-byte filled data
+** data file with specific offset to expose specific volume
+** overlay wiped vshadow catalog data
+** virtualize missing NTFS backup volume header
+** open dirty file system with write access, create "shadow" file
 
 20201124
 * see `git log' for more recent change log

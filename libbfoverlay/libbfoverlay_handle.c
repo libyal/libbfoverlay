@@ -26,7 +26,9 @@
 #include <wide_string.h>
 
 #include "libbfoverlay_definitions.h"
+#include "libbfoverlay_descriptor_file.h"
 #include "libbfoverlay_handle.h"
+#include "libbfoverlay_layer.h"
 #include "libbfoverlay_libbfio.h"
 #include "libbfoverlay_libcerror.h"
 #include "libbfoverlay_libcthreads.h"
@@ -111,6 +113,8 @@ int libbfoverlay_handle_initialize(
 		goto on_error;
 	}
 #endif
+	internal_handle->maximum_number_of_open_handles = LIBBFIO_POOL_UNLIMITED_NUMBER_OF_OPEN_HANDLES;
+
 	*handle = (libbfoverlay_handle_t *) internal_handle;
 
 	return( 1 );
@@ -729,6 +733,404 @@ on_error:
 	return( -1 );
 }
 
+/* Opens the data files
+ * This function is not multi-thread safe acquire write lock before call
+ * Returns 1 if successful or -1 on error
+ */
+int libbfoverlay_internal_handle_open_data_files(
+     libbfoverlay_internal_handle_t *internal_handle,
+     libcerror_error_t **error )
+{
+	libbfio_pool_t *file_io_pool = NULL;
+	libbfoverlay_layer_t *layer  = NULL;
+	static char *function        = "libbfoverlay_internal_handle_open_data_files";
+	size64_t file_size           = 0;
+	int layer_index              = 0;
+	int number_of_layers         = 0;
+
+	if( internal_handle == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
+		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
+		 "%s: invalid handle.",
+		 function );
+
+		return( -1 );
+	}
+	if( libbfoverlay_descriptor_get_number_of_layers(
+	     internal_handle->descriptor_file,
+	     &number_of_layers,
+	     error ) != 1 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
+		 "%s: unable to retrieve number of layers.",
+		 function );
+
+		goto on_error;
+	}
+	if( libbfio_pool_initialize(
+	     &file_io_pool,
+	     number_of_layers,
+	     internal_handle->maximum_number_of_open_handles,
+	     error ) != 1 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_INITIALIZE_FAILED,
+		 "%s: unable to create file IO pool.",
+		 function );
+
+		goto on_error;
+	}
+	for( layer_index = 0;
+	     layer_index < number_of_layers;
+	     layer_index++ )
+	{
+		if( libbfoverlay_descriptor_get_layer_by_index(
+		     internal_handle->descriptor_file,
+		     0,
+		     &layer,
+		     error ) != 1 )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+			 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
+			 "%s: unable to retrieve layer: %d.",
+			 function,
+			 layer_index );
+
+			goto on_error;
+		}
+		if( layer == NULL )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+			 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
+			 "%s: missing layer: %d.",
+			 function,
+			 layer_index );
+
+			goto on_error;
+		}
+		if( ( layer->file_path != NULL )
+		 && ( layer->file_path_size > 0 ) )
+		{
+/* TODO convert file path to system string */
+
+#if defined( HAVE_WIDE_SYSTEM_CHARACTER )
+			if( libbfio_file_pool_open_wide(
+			     file_io_pool,
+			     layer_index,
+			     layer->file_path,
+			     LIBBFIO_OPEN_READ,
+			     error ) != 1 )
+#else
+			if( libbfio_file_pool_open(
+			     file_io_pool,
+			     layer_index,
+			     layer->file_path,
+			     LIBBFIO_OPEN_READ,
+			     error ) != 1 )
+#endif
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_IO,
+				 LIBCERROR_IO_ERROR_OPEN_FAILED,
+				 "%s: unable to open layer: %d data file.",
+				 function,
+				 layer_index );
+
+				goto on_error;
+			}
+			if( libbfio_pool_get_size(
+			     file_io_pool,
+			     layer_index,
+			     &file_size,
+			     error ) != 1 )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+				 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
+				 "%s: unable to retrieve layer: %d data file size.",
+				 function,
+				 layer_index );
+
+				goto on_error;
+			}
+			if( file_size > (size64_t) INT64_MAX )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+				 LIBCERROR_RUNTIME_ERROR_VALUE_EXCEEDS_MAXIMUM,
+				 "%s: invalid layer: %d data file size value exceeds maximum.",
+				 function,
+				 layer_index );
+
+				goto on_error;
+			}
+			/* A negative file offset indicates an offset relative from the end of the data file
+			 */
+			if( layer->file_offset < 0 )
+			{
+				if( layer->file_offset <= ( -1 * (off64_t) file_size ) )
+				{
+					libcerror_error_set(
+					 error,
+					 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+					 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+					 "%s: invalid layer: %d file offset value out of bounds.",
+					 function,
+					 layer_index );
+
+					goto on_error;
+				}
+				if( ( layer->size > file_size )
+				 || ( layer->file_offset <= ( -1 * (off64_t) ( file_size - layer->size ) ) ) )
+				{
+					libcerror_error_set(
+					 error,
+					 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+					 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+					 "%s: invalid layer: %d size value out of bounds.",
+					 function,
+					 layer_index );
+
+					goto on_error;
+				}
+			}
+			else
+			{
+				if( layer->file_offset >= (off64_t) file_size )
+				{
+					libcerror_error_set(
+					 error,
+					 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+					 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+					 "%s: invalid layer: %d file offset value out of bounds.",
+					 function,
+					 layer_index );
+
+					goto on_error;
+				}
+				if( ( layer->size > file_size )
+				 || ( layer->file_offset >= (off64_t) ( file_size - layer->size ) ) )
+				{
+					libcerror_error_set(
+					 error,
+					 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+					 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+					 "%s: invalid layer: %d size value out of bounds.",
+					 function,
+					 layer_index );
+
+					goto on_error;
+				}
+			}
+		}
+	}
+	return( 1 );
+
+on_error:
+	if( file_io_pool != NULL )
+	{
+		libbfio_pool_close_all(
+		 file_io_pool,
+		 NULL );
+		libbfio_pool_free(
+		 &file_io_pool,
+		 NULL );
+	}
+	return( -1 );
+}
+
+/* Opens the data files
+ * Returns 1 if successful or -1 on error
+ */
+int libbfoverlay_handle_open_data_files(
+     libbfoverlay_handle_t *handle,
+     libcerror_error_t **error )
+{
+	libbfoverlay_internal_handle_t *internal_handle = NULL;
+	static char *function                           = "libbfoverlay_handle_open_data_files";
+	int result                                      = 1;
+
+	if( handle == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
+		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
+		 "%s: invalid handle.",
+		 function );
+
+		return( -1 );
+	}
+	internal_handle = (libbfoverlay_internal_handle_t *) handle;
+
+	if( internal_handle->descriptor_file == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
+		 "%s: invalid handle - missing descriptor file.",
+		 function );
+
+		return( -1 );
+	}
+	if( internal_handle->data_file_io_pool != NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_ALREADY_SET,
+		 "%s: invalid handle - data file IO pool already exists.",
+		 function );
+
+		return( -1 );
+	}
+#if defined( HAVE_MULTI_THREAD_SUPPORT ) && !defined( HAVE_LOCAL_LIBBFOVERLAY )
+	if( libcthreads_read_write_lock_grab_for_write(
+	     internal_handle->read_write_lock,
+	     error ) != 1 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_SET_FAILED,
+		 "%s: unable to grab read/write lock for writing.",
+		 function );
+
+		return( -1 );
+	}
+#endif
+	if( libbfoverlay_internal_handle_open_data_files(
+	     internal_handle,
+	     error ) != 1 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_IO,
+		 LIBCERROR_IO_ERROR_OPEN_FAILED,
+		 "%s: unable to open data files.",
+		 function );
+
+		result = -1;
+	}
+#if defined( HAVE_MULTI_THREAD_SUPPORT ) && !defined( HAVE_LOCAL_LIBBFOVERLAY )
+	if( libcthreads_read_write_lock_release_for_write(
+	     internal_handle->read_write_lock,
+	     error ) != 1 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_SET_FAILED,
+		 "%s: unable to release read/write lock for writing.",
+		 function );
+
+		return( -1 );
+	}
+#endif
+	return( result );
+}
+
+/* Opens the data files using a Basic File IO (bfio) pool
+ * Returns 1 if successful or -1 on error
+ */
+int libbfoverlay_handle_open_data_files_file_io_pool(
+     libbfoverlay_handle_t *handle,
+     libbfio_pool_t *file_io_pool,
+     libcerror_error_t **error )
+{
+	libbfoverlay_internal_handle_t *internal_handle = NULL;
+	static char *function                           = "libbfoverlay_handle_open_data_files_file_io_pool";
+	int result                                      = 1;
+
+	if( handle == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
+		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
+		 "%s: invalid handle.",
+		 function );
+
+		return( -1 );
+	}
+	internal_handle = (libbfoverlay_internal_handle_t *) handle;
+
+	if( internal_handle->descriptor_file == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
+		 "%s: invalid handle - missing descriptor file.",
+		 function );
+
+		return( -1 );
+	}
+	if( internal_handle->data_file_io_pool != NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_ALREADY_SET,
+		 "%s: invalid handle - data file IO pool already exists.",
+		 function );
+
+		return( -1 );
+	}
+#if defined( HAVE_MULTI_THREAD_SUPPORT ) && !defined( HAVE_LOCAL_LIBBFOVERLAY )
+	if( libcthreads_read_write_lock_grab_for_write(
+	     internal_handle->read_write_lock,
+	     error ) != 1 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_SET_FAILED,
+		 "%s: unable to grab read/write lock for writing.",
+		 function );
+
+		return( -1 );
+	}
+#endif
+
+/* TODO iterate layers for data files */
+/* TODO check if file_offset - size range falls within data file */
+	result = -1;
+
+#if defined( HAVE_MULTI_THREAD_SUPPORT ) && !defined( HAVE_LOCAL_LIBBFOVERLAY )
+	if( libcthreads_read_write_lock_release_for_write(
+	     internal_handle->read_write_lock,
+	     error ) != 1 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_SET_FAILED,
+		 "%s: unable to release read/write lock for writing.",
+		 function );
+
+		return( -1 );
+	}
+#endif
+	return( result );
+}
+
 /* Closes the handle
  * Returns 0 if successful or -1 on error
  */
@@ -816,6 +1218,19 @@ int libbfoverlay_handle_close(
 	internal_handle->file_io_handle = NULL;
 	internal_handle->current_offset = 0;
 
+	if( libbfoverlay_descriptor_file_free(
+	     &( internal_handle->descriptor_file ),
+	     error ) != 1 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_FINALIZE_FAILED,
+		 "%s: unable to free descriptor file.",
+		 function );
+
+		result = -1;
+	}
 #if defined( HAVE_MULTI_THREAD_SUPPORT ) && !defined( HAVE_LOCAL_LIBBFOVERLAY )
 	if( libcthreads_read_write_lock_release_for_write(
 	     internal_handle->read_write_lock,
@@ -842,7 +1257,8 @@ int libbfoverlay_internal_handle_open_read(
      libbfio_handle_t *file_io_handle,
      libcerror_error_t **error )
 {
-	static char *function = "libbfoverlay_internal_handle_open_read";
+	libbfoverlay_layer_t *base_layer = NULL;
+	static char *function            = "libbfoverlay_internal_handle_open_read";
 
 	if( internal_handle == NULL )
 	{
@@ -855,15 +1271,71 @@ int libbfoverlay_internal_handle_open_read(
 
 		return( -1 );
 	}
-/* TODO read configuration */
+	if( libbfoverlay_descriptor_file_initialize(
+	     &( internal_handle->descriptor_file ),
+	     error ) != 1 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_INITIALIZE_FAILED,
+		 "%s: unable to create descriptor file.",
+		 function );
 
-/* TODO set base layer size */
-	internal_handle->size = (size64_t) 2UL * 1024 * 1024 * 1024 * 1024;
+		goto on_error;
+	}
+	if( libbfoverlay_descriptor_file_read_file_io_handle(
+	     internal_handle->descriptor_file,
+	     file_io_handle,
+	     error ) != 1 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_IO,
+		 LIBCERROR_IO_ERROR_READ_FAILED,
+		 "%s: unable to read descriptor file.",
+		 function );
 
-/* TODO add file data overlay layers */
+		goto on_error;
+	}
+	if( libbfoverlay_descriptor_get_layer_by_index(
+	     internal_handle->descriptor_file,
+	     0,
+	     &base_layer,
+	     error ) != 1 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
+		 "%s: unable to retrieve base layer.",
+		 function );
 
-/* TODO implement */
+		goto on_error;
+	}
+	if( base_layer == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
+		 "%s: missing base layer.",
+		 function );
+
+		goto on_error;
+	}
+	internal_handle->size = base_layer->size;
+
 	return( 1 );
+
+on_error:
+	if( internal_handle->descriptor_file != NULL )
+	{
+		libbfoverlay_descriptor_file_free(
+		 &( internal_handle->descriptor_file ),
+		 NULL );
+	}
+	return( -1 );
 }
 
 /* Reads data from the current offset into a buffer
@@ -937,6 +1409,8 @@ ssize_t libbfoverlay_internal_handle_read_buffer(
 			return( -1 );
 		}
 		buffer_offset += buffer_size;
+
+		internal_handle->current_offset += buffer_size;
 	}
 	return( (ssize_t) buffer_offset );
 }

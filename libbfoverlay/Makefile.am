@@ -11,6 +11,7 @@ AM_CPPFLAGS = \
 	@LIBCFILE_CPPFLAGS@ \
 	@LIBCPATH_CPPFLAGS@ \
 	@LIBBFIO_CPPFLAGS@ \
+	@LIBFVALUE_CPPFLAGS@ \
 	@PTHREAD_CPPFLAGS@ \
 	@LIBBFOVERLAY_DLL_EXPORT@
 
@@ -20,15 +21,18 @@ libbfoverlay_la_SOURCES = \
 	libbfoverlay.c \
 	libbfoverlay_codepage.h \
 	libbfoverlay_definitions.h \
+	libbfoverlay_descriptor_file.c libbfoverlay_descriptor_file.h \
 	libbfoverlay_error.c libbfoverlay_error.h \
 	libbfoverlay_extern.h \
 	libbfoverlay_handle.c libbfoverlay_handle.h \
+	libbfoverlay_layer.c libbfoverlay_layer.h \
 	libbfoverlay_libbfio.h \
 	libbfoverlay_libcdata.h \
 	libbfoverlay_libcerror.h \
 	libbfoverlay_libclocale.h \
 	libbfoverlay_libcnotify.h \
 	libbfoverlay_libcthreads.h \
+	libbfoverlay_libfvalue.h \
 	libbfoverlay_libuna.h \
 	libbfoverlay_notify.c libbfoverlay_notify.h \
 	libbfoverlay_support.c libbfoverlay_support.h \
@@ -46,6 +50,7 @@ libbfoverlay_la_LIBADD = \
 	@LIBCFILE_LIBADD@ \
 	@LIBCPATH_LIBADD@ \
 	@LIBBFIO_LIBADD@ \
+	@LIBFVALUE_LIBADD@ \
 	@PTHREAD_LIBADD@
 
 libbfoverlay_la_LDFLAGS = -no-undefined -version-info 1:0:0
