@@ -35,6 +35,7 @@ libbfoverlay_la_SOURCES = \
 	libbfoverlay_libfvalue.h \
 	libbfoverlay_libuna.h \
 	libbfoverlay_notify.c libbfoverlay_notify.h \
+	libbfoverlay_range.c libbfoverlay_range.h \
 	libbfoverlay_support.c libbfoverlay_support.h \
 	libbfoverlay_types.h \
 	libbfoverlay_unused.h

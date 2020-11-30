@@ -86,6 +86,8 @@ int libbfoverlay_layer_initialize(
 
 		goto on_error;
 	}
+	( *layer )->size = -1;
+
 	return( 1 );
 
 on_error:
@@ -132,5 +134,108 @@ int libbfoverlay_layer_free(
 		*layer = NULL;
 	}
 	return( 1 );
+}
+
+/* Sets the file path
+ * Returns 1 if successful or -1 on error
+ */
+int libbfoverlay_layer_set_file_path(
+     libbfoverlay_layer_t *layer,
+     const uint8_t *file_path,
+     size_t file_path_size,
+     libcerror_error_t **error )
+{
+	static char *function = "libbfoverlay_layer_set_file_path";
+
+	if( layer == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
+		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
+		 "%s: invalid layer.",
+		 function );
+
+		return( -1 );
+	}
+	if( layer->file_path != NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_ALREADY_SET,
+		 "%s: invalid layer - file path value already set.",
+		 function );
+
+		return( -1 );
+	}
+	if( file_path == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
+		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
+		 "%s: invalid file path.",
+		 function );
+
+		return( -1 );
+	}
+	if( ( file_path_size == 0 )
+	 || ( file_path_size > ( 32 * 1024 ) ) )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+		 "%s: invalid file path size value out of bounds.",
+		 function );
+
+		goto on_error;
+	}
+	layer->file_path = (uint8_t *) memory_allocate(
+	                                sizeof( uint8_t ) * file_path_size );
+
+	if( layer->file_path == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_MEMORY,
+		 LIBCERROR_MEMORY_ERROR_INSUFFICIENT,
+		 "%s: unable to create file path.",
+		 function );
+
+		goto on_error;
+	}
+	if( memory_copy(
+	     layer->file_path,
+	     file_path,
+	     file_path_size - 1 ) == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_MEMORY,
+		 LIBCERROR_MEMORY_ERROR_COPY_FAILED,
+		 "%s: unable to copy file path.",
+		 function );
+
+		goto on_error;
+	}
+	layer->file_path[ file_path_size - 1 ] = 0;
+
+	layer->file_path_size = file_path_size;
+
+	return( 1 );
+
+on_error:
+	if( layer->file_path != NULL )
+	{
+		memory_free(
+		 layer->file_path );
+
+		layer->file_path = NULL;
+	}
+	layer->file_path_size = 0;
+
+	return( -1 );
 }
 

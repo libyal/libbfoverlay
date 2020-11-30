@@ -32,6 +32,7 @@ check_PROGRAMS = \
 	bfoverlay_test_handle \
 	bfoverlay_test_layer \
 	bfoverlay_test_notify \
+	bfoverlay_test_range \
 	bfoverlay_test_support
 
 bfoverlay_test_descriptor_file_SOURCES = \
@@ -113,6 +114,18 @@ bfoverlay_test_notify_SOURCES = \
 	bfoverlay_test_unused.h
 
 bfoverlay_test_notify_LDADD = \
+	../libbfoverlay/libbfoverlay.la \
+	@LIBCERROR_LIBADD@
+
+bfoverlay_test_range_SOURCES = \
+	bfoverlay_test_libbfoverlay.h \
+	bfoverlay_test_libcerror.h \
+	bfoverlay_test_macros.h \
+	bfoverlay_test_memory.c bfoverlay_test_memory.h \
+	bfoverlay_test_range.c \
+	bfoverlay_test_unused.h
+
+bfoverlay_test_range_LDADD = \
 	../libbfoverlay/libbfoverlay.la \
 	@LIBCERROR_LIBADD@
 

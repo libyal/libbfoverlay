@@ -7,7 +7,7 @@ EXIT_SUCCESS=0;
 EXIT_FAILURE=1;
 EXIT_IGNORE=77;
 
-LIBRARY_TESTS="descriptor_file error layer notify support";
+LIBRARY_TESTS="descriptor_file error layer notify range support";
 LIBRARY_TESTS_WITH_INPUT="handle";
 OPTION_SETS="";
 

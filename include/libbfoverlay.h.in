@@ -212,6 +212,21 @@ int libbfoverlay_handle_open_file_io_handle(
 
 #endif /* defined( LIBBFOVERLAY_HAVE_BFIO ) */
 
+LIBBFOVERLAY_EXTERN \
+int libbfoverlay_handle_open_data_files(
+     libbfoverlay_handle_t *handle,
+     libbfoverlay_error_t **error );
+
+#if defined( LIBBFOVERLAY_HAVE_BFIO )
+
+LIBBFOVERLAY_EXTERN \
+int libbfoverlay_handle_open_data_files_file_io_pool(
+     libbfoverlay_handle_t *handle,
+     libbfio_pool_t *file_io_pool,
+     libbfoverlay_error_t **error );
+
+#endif /* defined( LIBBFOVERLAY_HAVE_BFIO ) */
+
 /* Closes the handle
  * Returns 0 if successful or -1 on error
  */

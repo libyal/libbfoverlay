@@ -28,6 +28,7 @@
 #include "libbfoverlay_descriptor_file.h"
 #include "libbfoverlay_extern.h"
 #include "libbfoverlay_libbfio.h"
+#include "libbfoverlay_libcdata.h"
 #include "libbfoverlay_libcerror.h"
 #include "libbfoverlay_libcthreads.h"
 #include "libbfoverlay_types.h"
@@ -43,6 +44,10 @@ struct libbfoverlay_internal_handle
 	/* The descriptor file
 	 */
 	libbfoverlay_descriptor_file_t *descriptor_file;
+
+	/* The ranges array
+	 */
+	libcdata_array_t *ranges_array;
 
 	/* The current offset
 	 */
@@ -157,6 +162,10 @@ ssize_t libbfoverlay_internal_handle_read_buffer(
          uint8_t *buffer,
          size_t buffer_size,
          libcerror_error_t **error );
+
+int libbfoverlay_internal_handle_open_determine_ranges(
+     libbfoverlay_internal_handle_t *internal_handle,
+     libcerror_error_t **error );
 
 LIBBFOVERLAY_EXTERN \
 ssize_t libbfoverlay_handle_read_buffer(

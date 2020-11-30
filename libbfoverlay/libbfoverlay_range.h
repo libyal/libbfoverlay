@@ -1,5 +1,5 @@
 /*
- * Layer functions
+ * The range functions
  *
  * Copyright (C) 2020, Joachim Metz <joachim.metz@gmail.com>
  *
@@ -19,8 +19,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#if !defined( _LIBBFOVERLAY_LAYER_H )
-#define _LIBBFOVERLAY_LAYER_H
+#if !defined( _LIBBFOVERLAY_RANGE_H )
+#define _LIBBFOVERLAY_RANGE_H
 
 #include <common.h>
 #include <types.h>
@@ -31,48 +31,59 @@
 extern "C" {
 #endif
 
-typedef struct libbfoverlay_layer libbfoverlay_layer_t;
+typedef struct libbfoverlay_range libbfoverlay_range_t;
 
-struct libbfoverlay_layer
+struct libbfoverlay_range
 {
-	/* Offset
+	/* The start offset
 	 */
-	off64_t offset;
+	off64_t start_offset;
 
-	/* Size
+	/* The end offset
 	 */
-	int64_t size;
+	off64_t end_offset;
 
-	/* Data file path
+	/* The size
 	 */
-	uint8_t *file_path;
+	size64_t size;
 
-	/* Data file path size
+	/* The flags
 	 */
-	size_t file_path_size;
+	uint32_t flags;
 
-	/* Data file offset
+	/* The data file index
 	 */
-	off64_t file_offset;
+	int data_file_index;
+
+	/* The data file offset
+	 */
+	off64_t data_file_offset;
 };
 
-int libbfoverlay_layer_initialize(
-     libbfoverlay_layer_t **layer,
+int libbfoverlay_range_initialize(
+     libbfoverlay_range_t **range,
      libcerror_error_t **error );
 
-int libbfoverlay_layer_free(
-     libbfoverlay_layer_t **layer,
+int libbfoverlay_range_free(
+     libbfoverlay_range_t **range,
      libcerror_error_t **error );
 
-int libbfoverlay_layer_set_file_path(
-     libbfoverlay_layer_t *layer,
-     const uint8_t *file_path,
-     size_t file_path_size,
+int libbfoverlay_range_set(
+     libbfoverlay_range_t *range,
+     int data_file_index,
+     off64_t offset,
+     size64_t size,
+     uint32_t flags,
+     libcerror_error_t **error );
+
+int libbfoverlay_range_compare(
+     libbfoverlay_range_t *first_range,
+     libbfoverlay_range_t *second_range,
      libcerror_error_t **error );
 
 #if defined( __cplusplus )
 }
 #endif
 
-#endif /* !defined( _LIBBFOVERLAY_LAYER_H ) */
+#endif /* !defined( _LIBBFOVERLAY_RANGE_H ) */
 

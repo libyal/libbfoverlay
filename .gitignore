@@ -131,6 +131,7 @@ stamp-h[1-9]
 /tests/bfoverlay_test_handle
 /tests/bfoverlay_test_layer
 /tests/bfoverlay_test_notify
+/tests/bfoverlay_test_range
 /tests/bfoverlay_test_support
 /tests/tmp*
 

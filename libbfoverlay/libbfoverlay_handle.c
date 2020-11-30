@@ -30,8 +30,11 @@
 #include "libbfoverlay_handle.h"
 #include "libbfoverlay_layer.h"
 #include "libbfoverlay_libbfio.h"
+#include "libbfoverlay_libcdata.h"
 #include "libbfoverlay_libcerror.h"
+#include "libbfoverlay_libcnotify.h"
 #include "libbfoverlay_libcthreads.h"
+#include "libbfoverlay_range.h"
 #include "libbfoverlay_types.h"
 
 /* Creates a handle
@@ -154,7 +157,8 @@ int libbfoverlay_handle_free(
 	{
 		internal_handle = (libbfoverlay_internal_handle_t *) *handle;
 
-		if( internal_handle->file_io_handle != NULL )
+		if( ( internal_handle->file_io_handle != NULL )
+		 || ( internal_handle->data_file_io_pool != NULL ) )
 		{
 			if( libbfoverlay_handle_close(
 			     *handle,
@@ -794,7 +798,7 @@ int libbfoverlay_internal_handle_open_data_files(
 	{
 		if( libbfoverlay_descriptor_get_layer_by_index(
 		     internal_handle->descriptor_file,
-		     0,
+		     layer_index,
 		     &layer,
 		     error ) != 1 )
 		{
@@ -867,7 +871,8 @@ int libbfoverlay_internal_handle_open_data_files(
 
 				goto on_error;
 			}
-			if( file_size > (size64_t) INT64_MAX )
+			if( ( file_size == 0 )
+			 || ( file_size > (size64_t) INT64_MAX ) )
 			{
 				libcerror_error_set(
 				 error,
@@ -878,6 +883,14 @@ int libbfoverlay_internal_handle_open_data_files(
 				 layer_index );
 
 				goto on_error;
+			}
+			if( layer->size == -1 )
+			{
+				layer->size = file_size;
+			}
+			if( layer_index == 0 )
+			{
+				internal_handle->size = layer->size;
 			}
 			/* A negative file offset indicates an offset relative from the end of the data file
 			 */
@@ -895,8 +908,8 @@ int libbfoverlay_internal_handle_open_data_files(
 
 					goto on_error;
 				}
-				if( ( layer->size > file_size )
-				 || ( layer->file_offset <= ( -1 * (off64_t) ( file_size - layer->size ) ) ) )
+				if( ( layer->size > (int64_t) file_size )
+				 || ( layer->file_offset < ( -1 * (off64_t) ( file_size - layer->size ) ) ) )
 				{
 					libcerror_error_set(
 					 error,
@@ -923,8 +936,8 @@ int libbfoverlay_internal_handle_open_data_files(
 
 					goto on_error;
 				}
-				if( ( layer->size > file_size )
-				 || ( layer->file_offset >= (off64_t) ( file_size - layer->size ) ) )
+				if( ( layer->size > (int64_t) file_size )
+				 || ( layer->file_offset > (off64_t) ( file_size - layer->size ) ) )
 				{
 					libcerror_error_set(
 					 error,
@@ -939,6 +952,22 @@ int libbfoverlay_internal_handle_open_data_files(
 			}
 		}
 	}
+	if( libbfoverlay_internal_handle_open_determine_ranges(
+	     internal_handle,
+	     error ) != 1 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
+		 "%s: unable to determine ranges.",
+		 function );
+
+		goto on_error;
+	}
+	internal_handle->data_file_io_pool                    = file_io_pool;
+	internal_handle->data_file_io_pool_created_in_library = 1;
+
 	return( 1 );
 
 on_error:
@@ -1216,20 +1245,72 @@ int libbfoverlay_handle_close(
 		internal_handle->file_io_handle_created_in_library = 0;
 	}
 	internal_handle->file_io_handle = NULL;
-	internal_handle->current_offset = 0;
 
-	if( libbfoverlay_descriptor_file_free(
-	     &( internal_handle->descriptor_file ),
-	     error ) != 1 )
+	if( internal_handle->data_file_io_pool_created_in_library != 0 )
 	{
-		libcerror_error_set(
-		 error,
-		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
-		 LIBCERROR_RUNTIME_ERROR_FINALIZE_FAILED,
-		 "%s: unable to free descriptor file.",
-		 function );
+		if( libbfio_pool_close_all(
+		     internal_handle->data_file_io_pool,
+		     error ) != 0 )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_IO,
+			 LIBCERROR_IO_ERROR_CLOSE_FAILED,
+			 "%s: unable to close all files in data file IO pool.",
+			 function );
 
-		result = -1;
+			result = -1;
+		}
+		if( libbfio_pool_free(
+		     &( internal_handle->data_file_io_pool ),
+		     error ) != 1 )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+			 LIBCERROR_RUNTIME_ERROR_FINALIZE_FAILED,
+			 "%s: unable to free data file IO pool.",
+			 function );
+
+			result = -1;
+		}
+		internal_handle->data_file_io_pool_created_in_library = 0;
+	}
+	internal_handle->data_file_io_pool = NULL;
+	internal_handle->current_offset    = 0;
+
+	if( internal_handle->descriptor_file != NULL )
+	{
+		if( libbfoverlay_descriptor_file_free(
+		     &( internal_handle->descriptor_file ),
+		     error ) != 1 )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+			 LIBCERROR_RUNTIME_ERROR_FINALIZE_FAILED,
+			 "%s: unable to free descriptor file.",
+			 function );
+
+			result = -1;
+		}
+	}
+	if( internal_handle->ranges_array != 0 )
+	{
+		if( libcdata_array_free(
+		     &( internal_handle->ranges_array ),
+		     (int (*)(intptr_t **, libcerror_error_t **)) &libbfoverlay_range_free,
+		     error ) != 1 )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+			 LIBCERROR_RUNTIME_ERROR_FINALIZE_FAILED,
+			 "%s: unable to free ranges array.",
+			 function );
+
+			result = -1;
+		}
 	}
 #if defined( HAVE_MULTI_THREAD_SUPPORT ) && !defined( HAVE_LOCAL_LIBBFOVERLAY )
 	if( libcthreads_read_write_lock_release_for_write(
@@ -1324,8 +1405,6 @@ int libbfoverlay_internal_handle_open_read(
 
 		goto on_error;
 	}
-	internal_handle->size = base_layer->size;
-
 	return( 1 );
 
 on_error:
@@ -1333,6 +1412,294 @@ on_error:
 	{
 		libbfoverlay_descriptor_file_free(
 		 &( internal_handle->descriptor_file ),
+		 NULL );
+	}
+	return( -1 );
+}
+
+/* Determine the ranges for reading
+ * Returns 1 if successful or -1 on error
+ */
+int libbfoverlay_internal_handle_open_determine_ranges(
+     libbfoverlay_internal_handle_t *internal_handle,
+     libcerror_error_t **error )
+{
+	libbfoverlay_layer_t *layer      = NULL;
+	libbfoverlay_range_t *range      = NULL;
+	libbfoverlay_range_t *safe_range = NULL;
+	static char *function            = "libbfoverlay_internal_handle_open_determine_ranges";
+	off64_t current_layer_offset     = 0;
+	int64_t range_size               = 0;
+	int64_t remaining_layer_size     = 0;
+	uint32_t range_flags             = 0;
+	int entry_index                  = 0;
+	int layer_index                  = 0;
+	int number_of_layers             = 0;
+	int number_of_ranges             = 0;
+	int range_index                  = 0;
+
+	if( internal_handle == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
+		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
+		 "%s: invalid handle.",
+		 function );
+
+		return( -1 );
+	}
+	if( internal_handle->ranges_array != NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_ALREADY_SET,
+		 "%s: invalid handle - ranges array value already set.",
+		 function );
+
+		return( -1 );
+	}
+	if( libcdata_array_initialize(
+	     &( internal_handle->ranges_array ),
+	     0,
+	     error ) != 1 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_INITIALIZE_FAILED,
+		 "%s: unable to create ranges array.",
+		 function );
+
+		goto on_error;
+	}
+	if( libbfoverlay_descriptor_get_number_of_layers(
+	     internal_handle->descriptor_file,
+	     &number_of_layers,
+	     error ) != 1 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
+		 "%s: unable to retrieve number of layers.",
+		 function );
+
+		goto on_error;
+	}
+	for( layer_index = number_of_layers - 1;
+	     layer_index >= 0;
+	     layer_index-- )
+	{
+		if( libbfoverlay_descriptor_get_layer_by_index(
+		     internal_handle->descriptor_file,
+		     layer_index,
+		     &layer,
+		     error ) != 1 )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+			 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
+			 "%s: unable to retrieve layer: %d.",
+			 function,
+			 layer_index );
+
+			goto on_error;
+		}
+		if( layer == NULL )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+			 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
+			 "%s: missing layer: %d.",
+			 function,
+			 layer_index );
+
+			goto on_error;
+		}
+		current_layer_offset = layer->offset;
+		remaining_layer_size = layer->size;
+
+		range_flags = ( layer->file_path == NULL );
+
+		for( range_index = 0;
+		     range_index < number_of_ranges;
+		     range_index++ )
+		{
+			if( libcdata_array_get_entry_by_index(
+			     internal_handle->ranges_array,
+			     range_index,
+			     (intptr_t **) &range,
+			     error ) != 1 )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+				 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
+				 "%s: unable to retrieve range: %d.",
+				 function,
+				 range_index );
+
+				goto on_error;
+			}
+			if( range == NULL )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+				 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
+				 "%s: missing range: %d.",
+				 function,
+				 range_index );
+
+				goto on_error;
+			}
+			if( current_layer_offset > range->end_offset )
+			{
+				continue;
+			}
+			if( current_layer_offset < range->start_offset )
+			{
+				/* Insert a new range before the current range
+				 */
+				range_size = remaining_layer_size;
+
+				if( range_size > ( range->start_offset - current_layer_offset ) )
+				{
+					range_size = (int64_t) ( range->start_offset - current_layer_offset );
+				}
+				if( libbfoverlay_range_initialize(
+				     &safe_range,
+				     error ) != 1 )
+				{
+					libcerror_error_set(
+					 error,
+					 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+					 LIBCERROR_RUNTIME_ERROR_INITIALIZE_FAILED,
+					 "%s: unable to create range.",
+					 function );
+
+					goto on_error;
+				}
+				safe_range->start_offset     = current_layer_offset;
+				safe_range->end_offset       = current_layer_offset + range_size;
+				safe_range->size             = range_size;
+				safe_range->flags            = range_flags;
+				safe_range->data_file_index  = layer_index;
+				safe_range->data_file_offset = layer->file_offset + current_layer_offset;
+
+#if defined( HAVE_DEBUG_OUTPUT )
+				if( libcnotify_verbose != 0 )
+				{
+					libcnotify_printf(
+					 "%s: inserting range for layer: %d with offset: %" PRIi64 " (0x%08" PRIx64 ") and size: %" PRIi64 ".\n",
+					 function,
+					 layer_index,
+					 current_layer_offset,
+					 current_layer_offset,
+					 range_size );
+				}
+#endif
+				if( libcdata_array_insert_entry(
+				     internal_handle->ranges_array,
+				     &entry_index,
+				     (intptr_t *) safe_range,
+				     (int (*)(intptr_t *, intptr_t *, libcerror_error_t **)) &libbfoverlay_range_compare,
+				     LIBCDATA_INSERT_FLAG_UNIQUE_ENTRIES,
+				     error ) != 1 )
+				{
+					libcerror_error_set(
+					 error,
+					 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+					 LIBCERROR_RUNTIME_ERROR_APPEND_FAILED,
+					 "%s: unable to insert range into array.",
+					 function );
+
+					goto on_error;
+				}
+				safe_range = NULL;
+
+				range_index++;
+				number_of_ranges++;
+
+				current_layer_offset += range_size;
+				remaining_layer_size -= range_size;
+			}
+			if( ( current_layer_offset >= range->start_offset )
+			 && ( current_layer_offset >= range->end_offset ) )
+			{
+				current_layer_offset  = range->end_offset;
+				remaining_layer_size -= range->size;
+			}
+			if( remaining_layer_size <= 0 )
+			{
+				break;
+			}
+		}
+		if( remaining_layer_size > 0 )
+		{
+			if( libbfoverlay_range_initialize(
+			     &safe_range,
+			     error ) != 1 )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+				 LIBCERROR_RUNTIME_ERROR_INITIALIZE_FAILED,
+				 "%s: unable to create range.",
+				 function );
+
+				goto on_error;
+			}
+			safe_range->start_offset     = current_layer_offset;
+			safe_range->end_offset       = current_layer_offset + remaining_layer_size;
+			safe_range->size             = remaining_layer_size;
+			safe_range->flags            = range_flags;
+			safe_range->data_file_index  = layer_index;
+			safe_range->data_file_offset = layer->file_offset + current_layer_offset;
+
+#if defined( HAVE_DEBUG_OUTPUT )
+			if( libcnotify_verbose != 0 )
+			{
+				libcnotify_printf(
+				 "%s: inserting range for layer: %d with offset: %" PRIi64 " (0x%08" PRIx64 ") and size: %" PRIi64 ".\n",
+				 function,
+				 layer_index,
+				 current_layer_offset,
+				 current_layer_offset,
+				 remaining_layer_size );
+			}
+#endif
+			if( libcdata_array_insert_entry(
+			     internal_handle->ranges_array,
+			     &entry_index,
+			     (intptr_t *) safe_range,
+			     (int (*)(intptr_t *, intptr_t *, libcerror_error_t **)) &libbfoverlay_range_compare,
+			     LIBCDATA_INSERT_FLAG_UNIQUE_ENTRIES,
+			     error ) != 1 )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+				 LIBCERROR_RUNTIME_ERROR_APPEND_FAILED,
+				 "%s: unable to insert range into array.",
+				 function );
+
+				goto on_error;
+			}
+			safe_range = NULL;
+		}
+	}
+	return( 1 );
+
+on_error:
+	if( safe_range != NULL )
+	{
+		libbfoverlay_range_free(
+		 &safe_range,
 		 NULL );
 	}
 	return( -1 );
@@ -1348,8 +1715,14 @@ ssize_t libbfoverlay_internal_handle_read_buffer(
          size_t buffer_size,
          libcerror_error_t **error )
 {
-	static char *function = "libbfoverlay_internal_handle_read_buffer";
-	size_t buffer_offset  = 0;
+	libbfoverlay_range_t *range = NULL;
+	static char *function       = "libbfoverlay_internal_handle_read_buffer";
+	size_t buffer_offset        = 0;
+	size_t read_size            = 0;
+	ssize_t read_count          = 0;
+	off64_t file_offset         = 0;
+	int number_of_ranges        = 0;
+	int range_index             = 0;
 
 	if( internal_handle == NULL )
 	{
@@ -1392,25 +1765,151 @@ ssize_t libbfoverlay_internal_handle_read_buffer(
 	{
 		buffer_size = (size_t) ( internal_handle->size - internal_handle->current_offset );
 	}
-	while( buffer_offset < buffer_size )
+/* TODO move into get range by offset function ? */
+/* TODO preserve current range and index */
+	if( libcdata_array_get_number_of_entries(
+	     internal_handle->ranges_array,
+	     &number_of_ranges,
+	     error ) != 1 )
 	{
-		if( memory_set(
-		     &( buffer[ buffer_offset ] ),
-		     0,
-		     buffer_size ) == NULL )
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
+		 "%s: unable to retrieve number of ranges.",
+		 function );
+
+		return( -1 );
+	}
+	for( range_index = 0;
+	     range_index < number_of_ranges;
+	     range_index++ )
+	{
+		if( libcdata_array_get_entry_by_index(
+		     internal_handle->ranges_array,
+		     range_index,
+		     (intptr_t **) &range,
+		     error ) != 1 )
 		{
 			libcerror_error_set(
 			 error,
-			 LIBCERROR_ERROR_DOMAIN_MEMORY,
-			 LIBCERROR_MEMORY_ERROR_SET_FAILED,
-			 "%s: unable to clear buffer.",
-			 function );
+			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+			 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
+			 "%s: unable to retrieve range: %d.",
+			 function,
+			 range_index );
 
 			return( -1 );
 		}
-		buffer_offset += buffer_size;
+		if( range == NULL )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+			 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
+			 "%s: missing range: %d.",
+			 function,
+			 range_index );
 
-		internal_handle->current_offset += buffer_size;
+			return( -1 );
+		}
+		if( ( internal_handle->current_offset >= range->start_offset )
+		 && ( internal_handle->current_offset < range->end_offset ) )
+		{
+			break;
+		}
+	}
+	while( buffer_offset < buffer_size )
+	{
+		read_size = buffer_size;
+
+		if( (int64_t) read_size > ( range->end_offset - internal_handle->current_offset ) )
+		{
+			read_size = (size_t) ( range->end_offset - internal_handle->current_offset );
+		}
+		if( ( range->flags & 1 ) != 0 )
+		{
+			if( memory_set(
+			     &( buffer[ buffer_offset ] ),
+			     0,
+			     read_size ) == NULL )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_MEMORY,
+				 LIBCERROR_MEMORY_ERROR_SET_FAILED,
+				 "%s: unable to clear buffer.",
+				 function );
+
+				return( -1 );
+			}
+		}
+		else
+		{
+			file_offset = range->data_file_offset + ( internal_handle->current_offset - range->start_offset );
+
+			read_count = libbfio_pool_read_buffer_at_offset(
+			              internal_handle->data_file_io_pool,
+			              range->data_file_index,
+			              &( buffer[ buffer_offset ] ),
+			              read_size,
+			              file_offset,
+			              error );
+
+			if( read_count != (ssize_t) read_size )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_IO,
+				 LIBCERROR_IO_ERROR_READ_FAILED,
+				 "%s: unable to read data of size: %" PRIzd " from layer: %d at offset %" PRIi64 " (0x%08" PRIx64 ").",
+				 function,
+				 read_size,
+				 range->data_file_index,
+				 file_offset,
+				 file_offset );
+
+				return( -1 );
+			}
+		}
+		buffer_offset += read_size;
+
+		internal_handle->current_offset += read_size;
+
+		if( buffer_offset >= buffer_size )
+		{
+			break;
+		}
+		range_index++;
+
+		if( libcdata_array_get_entry_by_index(
+		     internal_handle->ranges_array,
+		     range_index,
+		     (intptr_t **) &range,
+		     error ) != 1 )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+			 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
+			 "%s: unable to retrieve range: %d.",
+			 function,
+			 range_index );
+
+			return( -1 );
+		}
+		if( range == NULL )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+			 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
+			 "%s: missing range: %d.",
+			 function,
+			 range_index );
+
+			return( -1 );
+		}
 	}
 	return( (ssize_t) buffer_offset );
 }
@@ -1441,6 +1940,17 @@ ssize_t libbfoverlay_handle_read_buffer(
 	}
 	internal_handle = (libbfoverlay_internal_handle_t *) handle;
 
+	if( internal_handle->data_file_io_pool == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
+		 "%s: invalid handle - missing data file IO pool.",
+		 function );
+
+		return( -1 );
+	}
 #if defined( HAVE_MULTI_THREAD_SUPPORT ) && !defined( HAVE_LOCAL_LIBBFOVERLAY )
 	if( libcthreads_read_write_lock_grab_for_write(
 	     internal_handle->read_write_lock,
@@ -1518,6 +2028,17 @@ ssize_t libbfoverlay_handle_read_buffer_at_offset(
 	}
 	internal_handle = (libbfoverlay_internal_handle_t *) handle;
 
+	if( internal_handle->data_file_io_pool == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
+		 "%s: invalid handle - missing data file IO pool.",
+		 function );
+
+		return( -1 );
+	}
 #if defined( HAVE_MULTI_THREAD_SUPPORT ) && !defined( HAVE_LOCAL_LIBBFOVERLAY )
 	if( libcthreads_read_write_lock_grab_for_write(
 	     internal_handle->read_write_lock,
@@ -1628,6 +2149,17 @@ ssize_t libbfoverlay_handle_write_buffer(
 	}
 	internal_handle = (libbfoverlay_internal_handle_t *) handle;
 
+	if( internal_handle->data_file_io_pool == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
+		 "%s: invalid handle - missing data file IO pool.",
+		 function );
+
+		return( -1 );
+	}
 	if( buffer == NULL )
 	{
 		libcerror_error_set(
@@ -1727,6 +2259,17 @@ ssize_t libbfoverlay_handle_write_buffer_at_offset(
 	}
 	internal_handle = (libbfoverlay_internal_handle_t *) handle;
 
+	if( internal_handle->data_file_io_pool == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
+		 "%s: invalid handle - missing data file IO pool.",
+		 function );
+
+		return( -1 );
+	}
 #if defined( HAVE_MULTI_THREAD_SUPPORT ) && !defined( HAVE_LOCAL_LIBBFOVERLAY )
 	if( libcthreads_read_write_lock_grab_for_write(
 	     internal_handle->read_write_lock,
@@ -1881,6 +2424,17 @@ off64_t libbfoverlay_handle_seek_offset(
 	}
 	internal_handle = (libbfoverlay_internal_handle_t *) handle;
 
+	if( internal_handle->data_file_io_pool == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
+		 "%s: invalid handle - missing data file IO pool.",
+		 function );
+
+		return( -1 );
+	}
 #if defined( HAVE_MULTI_THREAD_SUPPORT ) && !defined( HAVE_LOCAL_LIBBFOVERLAY )
 	if( libcthreads_read_write_lock_grab_for_write(
 	     internal_handle->read_write_lock,
@@ -1955,6 +2509,17 @@ int libbfoverlay_handle_get_offset(
 	}
 	internal_handle = (libbfoverlay_internal_handle_t *) handle;
 
+	if( internal_handle->data_file_io_pool == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
+		 "%s: invalid handle - missing data file IO pool.",
+		 function );
+
+		return( -1 );
+	}
 	if( offset == NULL )
 	{
 		libcerror_error_set(
@@ -2025,6 +2590,17 @@ int libbfoverlay_handle_get_size(
 	}
 	internal_handle = (libbfoverlay_internal_handle_t *) handle;
 
+	if( internal_handle->data_file_io_pool == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
+		 "%s: invalid handle - missing data file IO pool.",
+		 function );
+
+		return( -1 );
+	}
 	if( size == NULL )
 	{
 		libcerror_error_set(

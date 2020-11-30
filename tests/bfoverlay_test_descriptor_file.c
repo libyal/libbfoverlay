@@ -61,7 +61,7 @@ int bfoverlay_test_descriptor_file_initialize(
 	int result                                      = 0;
 
 #if defined( HAVE_BFOVERLAY_TEST_MEMORY )
-	int number_of_malloc_fail_tests                 = 1;
+	int number_of_malloc_fail_tests                 = 2;
 	int number_of_memset_fail_tests                 = 1;
 	int test_number                                 = 0;
 #endif
@@ -390,6 +390,170 @@ int bfoverlay_test_descriptor_file_read_data(
 	          bfoverlay_test_descriptor_file_data1,
 	          0,
 	          &error );
+
+	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
+	 "result",
+	 result,
+	 -1 );
+
+	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
+	 "error",
+	 error );
+
+	libcerror_error_free(
+	 &error );
+
+	/* Test error case where signature is invalid
+	 */
+	bfoverlay_test_descriptor_file_data1[ 2 ] = 0xff;
+
+	result = libbfoverlay_descriptor_file_read_data(
+	          descriptor_file,
+	          bfoverlay_test_descriptor_file_data1,
+	          138,
+	          &error );
+
+	bfoverlay_test_descriptor_file_data1[ 2 ] = 'b';
+
+	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
+	 "result",
+	 result,
+	 -1 );
+
+	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
+	 "error",
+	 error );
+
+	libcerror_error_free(
+	 &error );
+
+	/* Test error case where there are insufficient number of lines
+	 */
+	result = libbfoverlay_descriptor_file_read_data(
+	          descriptor_file,
+	          bfoverlay_test_descriptor_file_data1,
+	          37,
+	          &error );
+
+	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
+	 "result",
+	 result,
+	 -1 );
+
+	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
+	 "error",
+	 error );
+
+	libcerror_error_free(
+	 &error );
+
+	/* Test error case where line does not start with "layer:"
+	 */
+	bfoverlay_test_descriptor_file_data1[ 37 ] = 0xff;
+
+	result = libbfoverlay_descriptor_file_read_data(
+	          descriptor_file,
+	          bfoverlay_test_descriptor_file_data1,
+	          138,
+	          &error );
+
+	bfoverlay_test_descriptor_file_data1[ 37 ] = 'l';
+
+	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
+	 "result",
+	 result,
+	 -1 );
+
+	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
+	 "error",
+	 error );
+
+	libcerror_error_free(
+	 &error );
+
+	/* Test error case where there are insufficient number of values on a line
+	 */
+	bfoverlay_test_descriptor_file_data1[ 52 ] = '_';
+
+	result = libbfoverlay_descriptor_file_read_data(
+	          descriptor_file,
+	          bfoverlay_test_descriptor_file_data1,
+	          138,
+	          &error );
+
+	bfoverlay_test_descriptor_file_data1[ 52 ] = ' ';
+
+	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
+	 "result",
+	 result,
+	 -1 );
+
+	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
+	 "error",
+	 error );
+
+	libcerror_error_free(
+	 &error );
+
+	/* Test error case with invalid offset definition
+	 */
+	bfoverlay_test_descriptor_file_data1[ 84 ] = '_';
+
+	result = libbfoverlay_descriptor_file_read_data(
+	          descriptor_file,
+	          bfoverlay_test_descriptor_file_data1,
+	          138,
+	          &error );
+
+	bfoverlay_test_descriptor_file_data1[ 84 ] = '6';
+
+	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
+	 "result",
+	 result,
+	 -1 );
+
+	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
+	 "error",
+	 error );
+
+	libcerror_error_free(
+	 &error );
+
+	/* Test error case with invalid size definition
+	 */
+	bfoverlay_test_descriptor_file_data1[ 58 ] = '_';
+
+	result = libbfoverlay_descriptor_file_read_data(
+	          descriptor_file,
+	          bfoverlay_test_descriptor_file_data1,
+	          138,
+	          &error );
+
+	bfoverlay_test_descriptor_file_data1[ 58 ] = '1';
+
+	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
+	 "result",
+	 result,
+	 -1 );
+
+	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
+	 "error",
+	 error );
+
+	libcerror_error_free(
+	 &error );
+
+	/* Test error case with unsupported value in layer
+	 */
+	bfoverlay_test_descriptor_file_data1[ 56 ] = 'y';
+
+	result = libbfoverlay_descriptor_file_read_data(
+	          descriptor_file,
+	          bfoverlay_test_descriptor_file_data1,
+	          138,
+	          &error );
+
+	bfoverlay_test_descriptor_file_data1[ 56 ] = 'e';
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
 	 "result",

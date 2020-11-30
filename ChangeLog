@@ -1,6 +1,7 @@
 TODO:
 * library
 ** add support to read from data files
+** add indication to specify all remaining data
 ** complete open data file IO handles function
 ** file data (read-only) overlay layers
 ** add virtual write layer

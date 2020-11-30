@@ -4,6 +4,7 @@ MSVSCPP_FILES = \
 	bfoverlay_test_handle/bfoverlay_test_handle.vcproj \
 	bfoverlay_test_layer/bfoverlay_test_layer.vcproj \
 	bfoverlay_test_notify/bfoverlay_test_notify.vcproj \
+	bfoverlay_test_range/bfoverlay_test_range.vcproj \
 	bfoverlay_test_support/bfoverlay_test_support.vcproj \
 	bfoverlaymount/bfoverlaymount.vcproj \
 	libbfio/libbfio.vcproj \

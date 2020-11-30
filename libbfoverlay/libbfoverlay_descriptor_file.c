@@ -181,9 +181,10 @@ int libbfoverlay_descriptor_file_read_data(
 	uint8_t *line_string                  = NULL;
 	uint8_t *value_string                 = NULL;
 	static char *function                 = "libbfoverlay_descriptor_file_read";
-	size64_t base_layer_size              = 0;
 	size_t line_string_size               = 0;
 	size_t value_string_size              = 0;
+	uint64_t value_64bit                  = 0;
+	int64_t base_layer_size               = -1;
 	int entry_index                       = 0;
 	int layer_index                       = 0;
 	int line_index                        = 0;
@@ -429,21 +430,13 @@ int libbfoverlay_descriptor_file_read_data(
 			if( ( value_string_size > 5 )
 			 && ( memory_compare(
 			       value_string,
-			       "file=",
+			       "size=",
 			       5 ) == 0 ) )
-			{
-/* TODO implement */
-			}
-			else if( ( value_string_size > 5 )
-			      && ( memory_compare(
-			            value_string,
-			            "size=",
-			            5 ) == 0 ) )
 			{
 				if( libfvalue_utf8_string_copy_to_integer(
 				     &( value_string[ 5 ] ),
 				     value_string_size - 5,
-				     (uint64_t *) &( layer->size ),
+				     (uint64_t *) &value_64bit,
 				     64,
 				     LIBFVALUE_INTEGER_FORMAT_TYPE_DECIMAL_UNSIGNED,
 				     error ) != 1 )
@@ -453,6 +446,43 @@ int libbfoverlay_descriptor_file_read_data(
 					 LIBCERROR_ERROR_DOMAIN_MEMORY,
 					 LIBCERROR_MEMORY_ERROR_SET_FAILED,
 					 "%s: unable to set layer: %d size.",
+					 function,
+					 layer_index );
+
+					goto on_error;
+				}
+				if( value_64bit > (size64_t) INT64_MAX )
+				{
+					libcerror_error_set(
+					 error,
+					 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+					 LIBCERROR_RUNTIME_ERROR_VALUE_EXCEEDS_MAXIMUM,
+					 "%s: invalid layer: %d size value exceeds maximum.",
+					 function,
+					 layer_index );
+
+					goto on_error;
+				}
+				layer->size = (int64_t) value_64bit;
+			}
+			else if( ( value_string_size > 7 )
+			      && ( memory_compare(
+			            value_string,
+			            "file=\"",
+			            6 ) == 0 )
+			      && ( value_string[ value_string_size - 2 ] == '"' ) )
+			{
+				if( libbfoverlay_layer_set_file_path(
+				     layer,
+				     &( value_string[ 6 ] ),
+				     value_string_size - 7,
+				     error ) != 1 )
+				{
+					libcerror_error_set(
+					 error,
+					 LIBCERROR_ERROR_DOMAIN_MEMORY,
+					 LIBCERROR_MEMORY_ERROR_SET_FAILED,
+					 "%s: unable to set layer: %d file path.",
 					 function,
 					 layer_index );
 
@@ -509,6 +539,18 @@ int libbfoverlay_descriptor_file_read_data(
 					goto on_error;
 				}
 			}
+			else
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+				 LIBCERROR_RUNTIME_ERROR_UNSUPPORTED_VALUE,
+				 "%s: unsupported value in layer: %d.",
+				 function,
+				 layer_index );
+
+				goto on_error;
+			}
 		}
 		if( libfvalue_split_utf8_string_free(
 		     &values,
@@ -523,17 +565,20 @@ int libbfoverlay_descriptor_file_read_data(
 
 			goto on_error;
 		}
-		if( layer->size > (size64_t) INT64_MAX )
+		if( layer->file_path == NULL )
 		{
-			libcerror_error_set(
-			 error,
-			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
-			 LIBCERROR_RUNTIME_ERROR_VALUE_EXCEEDS_MAXIMUM,
-			 "%s: invalid layer: %d size value exceeds maximum.",
-			 function,
-			 layer_index );
+			if( layer->size == -1 )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+				 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+				 "%s: invalid layer: %d size value out of bounds - size of layer without a file path must be 0 or greater.",
+				 function,
+				 layer_index );
 
-			goto on_error;
+				goto on_error;
+			}
 		}
 		if( layer_index == 0 )
 		{
@@ -551,9 +596,13 @@ int libbfoverlay_descriptor_file_read_data(
 
 				goto on_error;
 			}
-			base_layer_size = layer->size;
+			if( ( layer->file_path == NULL )
+			 || ( layer->size != -1 ) )
+			{
+				base_layer_size = layer->size;
+			}
 		}
-		else
+		else if( base_layer_size >= 0 )
 		{
 			/* The logical offset of successive layers must be in bounds of the base layer
 			 * a negative offset indicates an offset relative from the end of the base layer
@@ -573,7 +622,7 @@ int libbfoverlay_descriptor_file_read_data(
 					goto on_error;
 				}
 				if( ( layer->size > base_layer_size )
-				 || ( layer->offset <= ( -1 * (off64_t) ( base_layer_size - layer->size ) ) ) )
+				 || ( layer->offset < ( -1 * (off64_t) ( base_layer_size - layer->size ) ) ) )
 				{
 					libcerror_error_set(
 					 error,
@@ -601,7 +650,7 @@ int libbfoverlay_descriptor_file_read_data(
 					goto on_error;
 				}
 				if( ( layer->size > base_layer_size )
-				 || ( layer->offset >= (off64_t) ( base_layer_size - layer->size ) ) )
+				 || ( layer->offset > (off64_t) ( base_layer_size - layer->size ) ) )
 				{
 					libcerror_error_set(
 					 error,
