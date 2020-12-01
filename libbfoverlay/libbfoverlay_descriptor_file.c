@@ -579,6 +579,22 @@ int libbfoverlay_descriptor_file_read_data(
 
 				goto on_error;
 			}
+			if( layer->file_offset >= 0 )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+				 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+				 "%s: invalid layer: %d file offset specified without file path.",
+				 function,
+				 layer_index );
+
+				goto on_error;
+			}
+		}
+		else if( layer->file_offset == -1 )
+		{
+			layer->file_offset = 0;
 		}
 		if( layer_index == 0 )
 		{
@@ -621,19 +637,7 @@ int libbfoverlay_descriptor_file_read_data(
 
 					goto on_error;
 				}
-				if( ( layer->size > base_layer_size )
-				 || ( layer->offset < ( -1 * (off64_t) ( base_layer_size - layer->size ) ) ) )
-				{
-					libcerror_error_set(
-					 error,
-					 LIBCERROR_ERROR_DOMAIN_RUNTIME,
-					 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
-					 "%s: invalid layer: %d size value out of bounds.",
-					 function,
-					 layer_index );
-
-					goto on_error;
-				}
+				layer->offset = base_layer_size + layer->offset;
 			}
 			else
 			{
@@ -649,19 +653,19 @@ int libbfoverlay_descriptor_file_read_data(
 
 					goto on_error;
 				}
-				if( ( layer->size > base_layer_size )
-				 || ( layer->offset > (off64_t) ( base_layer_size - layer->size ) ) )
-				{
-					libcerror_error_set(
-					 error,
-					 LIBCERROR_ERROR_DOMAIN_RUNTIME,
-					 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
-					 "%s: invalid layer: %d size value out of bounds.",
-					 function,
-					 layer_index );
+			}
+			if( ( layer->size > base_layer_size )
+			 || ( layer->offset > (off64_t) ( base_layer_size - layer->size ) ) )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+				 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+				 "%s: invalid layer: %d size value out of bounds.",
+				 function,
+				 layer_index );
 
-					goto on_error;
-				}
+				goto on_error;
 			}
 		}
 		if( libcdata_array_append_entry(

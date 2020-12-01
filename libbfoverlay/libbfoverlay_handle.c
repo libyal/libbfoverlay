@@ -34,6 +34,7 @@
 #include "libbfoverlay_libcerror.h"
 #include "libbfoverlay_libcnotify.h"
 #include "libbfoverlay_libcthreads.h"
+#include "libbfoverlay_libuna.h"
 #include "libbfoverlay_range.h"
 #include "libbfoverlay_types.h"
 
@@ -752,6 +753,12 @@ int libbfoverlay_internal_handle_open_data_files(
 	int layer_index              = 0;
 	int number_of_layers         = 0;
 
+#if defined( HAVE_WIDE_SYSTEM_CHARACTER )
+	wchar_t *wide_file_path      = NULL;
+	size_t wide_file_path_size   = 0;
+	int result                   = 0;
+#endif
+
 	if( internal_handle == NULL )
 	{
 		libcerror_error_set(
@@ -827,20 +834,98 @@ int libbfoverlay_internal_handle_open_data_files(
 		if( ( layer->file_path != NULL )
 		 && ( layer->file_path_size > 0 ) )
 		{
-/* TODO convert file path to system string */
-
 #if defined( HAVE_WIDE_SYSTEM_CHARACTER )
+#if SIZEOF_WCHAR_T == 4
+			result = libuna_utf32_string_size_from_utf8(
+			          (libuna_utf8_character_t *) layer->file_path,
+			          layer->file_path_size,
+			          &wide_file_path_size,
+			          error );
+#elif SIZEOF_WCHAR_T == 2
+			result = libuna_utf16_string_size_from_utf8(
+			          (libuna_utf8_character_t *) layer->file_path,
+			          layer->file_path_size,
+			          &wide_file_path_size,
+			          error );
+#else
+#error Unsupported size of wchar_t
+#endif /* SIZEOF_WCHAR_T */
+			if( result != 1 )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_CONVERSION,
+				 LIBCERROR_CONVERSION_ERROR_GENERIC,
+				 "%s: unable to determine wide file path size.",
+				 function );
+
+				goto on_error;
+			}
+			if( ( wide_file_path_size == 0 )
+			 || ( wide_file_path_size > ( 32 * 1024 * sizeof( wchar_t ) ) ) )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+				 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+				 "%s: invalid wide file path size value out of bounds.",
+				 function );
+
+				goto on_error;
+			}
+			wide_file_path = wide_string_allocate(
+			                  wide_file_path_size );
+
+			if( wide_file_path == NULL )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_MEMORY,
+				 LIBCERROR_MEMORY_ERROR_INSUFFICIENT,
+				 "%s: unable to create wide file path.",
+				 function );
+
+				goto on_error;
+			}
+#if SIZEOF_WCHAR_T == 4
+			result = libuna_utf32_string_copy_from_utf8(
+			          wide_file_path,
+			          wide_file_path_size,
+			          (libuna_utf8_character_t *) layer->file_path,
+			          layer->file_path_size,
+			          error );
+#elif SIZEOF_WCHAR_T == 2
+			result = libuna_utf16_string_copy_from_utf8(
+			          wide_file_path,
+			          wide_file_path_size,
+			          (libuna_utf8_character_t *) layer->file_path,
+			          layer->file_path_size,
+			          error );
+#else
+#error Unsupported size of wchar_t
+#endif /* SIZEOF_WCHAR_T */
+			if( result != 1 )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_CONVERSION,
+				 LIBCERROR_CONVERSION_ERROR_GENERIC,
+				 "%s: unable to determine wide file path size.",
+				 function );
+
+				goto on_error;
+			}
 			if( libbfio_file_pool_open_wide(
 			     file_io_pool,
 			     layer_index,
-			     layer->file_path,
+			     wide_file_path,
 			     LIBBFIO_OPEN_READ,
 			     error ) != 1 )
 #else
 			if( libbfio_file_pool_open(
 			     file_io_pool,
 			     layer_index,
-			     layer->file_path,
+			     (char *) layer->file_path,
 			     LIBBFIO_OPEN_READ,
 			     error ) != 1 )
 #endif
@@ -855,6 +940,12 @@ int libbfoverlay_internal_handle_open_data_files(
 
 				goto on_error;
 			}
+#if defined( HAVE_WIDE_SYSTEM_CHARACTER )
+			memory_free(
+			 wide_file_path );
+
+			wide_file_path = NULL;
+#endif
 			if( libbfio_pool_get_size(
 			     file_io_pool,
 			     layer_index,
@@ -887,10 +978,6 @@ int libbfoverlay_internal_handle_open_data_files(
 			if( layer->size == -1 )
 			{
 				layer->size = file_size;
-			}
-			if( layer_index == 0 )
-			{
-				internal_handle->size = layer->size;
 			}
 			/* A negative file offset indicates an offset relative from the end of the data file
 			 */
@@ -951,6 +1038,60 @@ int libbfoverlay_internal_handle_open_data_files(
 				}
 			}
 		}
+		if( layer_index == 0 )
+		{
+			internal_handle->size = layer->size;
+		}
+		else
+		{
+			/* The logical offset of successive layers must be in bounds of the base layer
+			 * a negative offset indicates an offset relative from the end of the base layer
+			 */
+			if( layer->offset < 0 )
+			{
+				if( layer->offset <= ( -1 * (off64_t) internal_handle->size ) )
+				{
+					libcerror_error_set(
+					 error,
+					 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+					 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+					 "%s: invalid layer: %d offset value out of bounds.",
+					 function,
+					 layer_index );
+
+					goto on_error;
+				}
+				layer->offset = internal_handle->size + layer->offset;
+			}
+			else
+			{
+				if( layer->offset >= (off64_t) internal_handle->size )
+				{
+					libcerror_error_set(
+					 error,
+					 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+					 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+					 "%s: invalid layer: %d offset value out of bounds.",
+					 function,
+					 layer_index );
+
+					goto on_error;
+				}
+			}
+			if( ( layer->size > internal_handle->size )
+			 || ( layer->offset > (off64_t) ( internal_handle->size - layer->size ) ) )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+				 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+				 "%s: invalid layer: %d size value out of bounds.",
+				 function,
+				 layer_index );
+
+				goto on_error;
+			}
+		}
 	}
 	if( libbfoverlay_internal_handle_open_determine_ranges(
 	     internal_handle,
@@ -971,6 +1112,13 @@ int libbfoverlay_internal_handle_open_data_files(
 	return( 1 );
 
 on_error:
+#if defined( HAVE_WIDE_SYSTEM_CHARACTER )
+	if( wide_file_path != NULL )
+	{
+		memory_free(
+		 wide_file_path );
+	}
+#endif
 	if( file_io_pool != NULL )
 	{
 		libbfio_pool_close_all(
@@ -1428,6 +1576,7 @@ int libbfoverlay_internal_handle_open_determine_ranges(
 	libbfoverlay_range_t *range      = NULL;
 	libbfoverlay_range_t *safe_range = NULL;
 	static char *function            = "libbfoverlay_internal_handle_open_determine_ranges";
+	off64_t current_data_file_offset = 0;
 	off64_t current_layer_offset     = 0;
 	int64_t range_size               = 0;
 	int64_t remaining_layer_size     = 0;
@@ -1520,11 +1669,24 @@ int libbfoverlay_internal_handle_open_determine_ranges(
 
 			goto on_error;
 		}
-		current_layer_offset = layer->offset;
-		remaining_layer_size = layer->size;
+		current_layer_offset     = layer->offset;
+		remaining_layer_size     = layer->size;
+		current_data_file_offset = layer->file_offset;
 
 		range_flags = ( layer->file_path == NULL );
 
+#if defined( HAVE_DEBUG_OUTPUT )
+		if( libcnotify_verbose != 0 )
+		{
+			libcnotify_printf(
+			 "%s: layer: %d with offset: %" PRIi64 " (0x%08" PRIx64 ") and size: %" PRIi64 ".\n",
+			 function,
+			 layer_index,
+			 current_layer_offset,
+			 current_layer_offset,
+			 remaining_layer_size );
+		}
+#endif
 		for( range_index = 0;
 		     range_index < number_of_ranges;
 		     range_index++ )
@@ -1589,7 +1751,7 @@ int libbfoverlay_internal_handle_open_determine_ranges(
 				safe_range->size             = range_size;
 				safe_range->flags            = range_flags;
 				safe_range->data_file_index  = layer_index;
-				safe_range->data_file_offset = layer->file_offset + current_layer_offset;
+				safe_range->data_file_offset = current_data_file_offset;
 
 #if defined( HAVE_DEBUG_OUTPUT )
 				if( libcnotify_verbose != 0 )
@@ -1625,14 +1787,16 @@ int libbfoverlay_internal_handle_open_determine_ranges(
 				range_index++;
 				number_of_ranges++;
 
-				current_layer_offset += range_size;
-				remaining_layer_size -= range_size;
+				current_layer_offset     += range_size;
+				remaining_layer_size     -= range_size;
+				current_data_file_offset += range_size;
 			}
 			if( ( current_layer_offset >= range->start_offset )
-			 && ( current_layer_offset >= range->end_offset ) )
+			 && ( current_layer_offset < range->end_offset ) )
 			{
-				current_layer_offset  = range->end_offset;
-				remaining_layer_size -= range->size;
+				current_layer_offset      = range->end_offset;
+				remaining_layer_size     -= range->size;
+				current_data_file_offset += range->size;
 			}
 			if( remaining_layer_size <= 0 )
 			{
@@ -1659,7 +1823,7 @@ int libbfoverlay_internal_handle_open_determine_ranges(
 			safe_range->size             = remaining_layer_size;
 			safe_range->flags            = range_flags;
 			safe_range->data_file_index  = layer_index;
-			safe_range->data_file_offset = layer->file_offset + current_layer_offset;
+			safe_range->data_file_offset = current_data_file_offset;
 
 #if defined( HAVE_DEBUG_OUTPUT )
 			if( libcnotify_verbose != 0 )
@@ -1691,6 +1855,8 @@ int libbfoverlay_internal_handle_open_determine_ranges(
 				goto on_error;
 			}
 			safe_range = NULL;
+
+			number_of_ranges++;
 		}
 	}
 	return( 1 );
@@ -1821,7 +1987,7 @@ ssize_t libbfoverlay_internal_handle_read_buffer(
 	}
 	while( buffer_offset < buffer_size )
 	{
-		read_size = buffer_size;
+		read_size = buffer_size - buffer_offset;
 
 		if( (int64_t) read_size > ( range->end_offset - internal_handle->current_offset ) )
 		{

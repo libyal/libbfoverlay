@@ -310,6 +310,19 @@ int mount_handle_open(
 
 		goto on_error;
 	}
+	if( libbfoverlay_handle_open_data_files(
+	     bfoverlay_handle,
+	     error ) != 1 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_IO,
+		 LIBCERROR_IO_ERROR_OPEN_FAILED,
+		 "%s: unable to open data files.",
+		 function );
+
+		goto on_error;
+	}
 	if( mount_file_system_append_handle(
 	     mount_handle->file_system,
 	     bfoverlay_handle,

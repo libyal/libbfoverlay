@@ -86,7 +86,8 @@ int libbfoverlay_layer_initialize(
 
 		goto on_error;
 	}
-	( *layer )->size = -1;
+	( *layer )->size        = -1;
+	( *layer )->file_offset = -1;
 
 	return( 1 );
 

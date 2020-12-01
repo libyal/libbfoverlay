@@ -166,7 +166,9 @@ int libbfoverlay_range_compare(
 
 		return( -1 );
 	}
-	if( first_range->end_offset < second_range->start_offset )
+	/* Note that the end offset is the upper bound of the range and and is not considered part of the range
+	 */
+	if( first_range->end_offset <= second_range->start_offset )
 	{
 		return( LIBCDATA_COMPARE_LESS );
 	}
