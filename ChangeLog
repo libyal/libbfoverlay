@@ -1,9 +1,7 @@
 TODO:
 * library
-** add support to read from data files
 ** add indication to specify all remaining data
 ** complete open data file IO handles function
-** file data (read-only) overlay layers
 ** add virtual write layer
 ** add support to track reads and writes in a log file?
 ** add support to read and cache in memory for slow media?
@@ -14,8 +12,6 @@ TODO:
 * document examples
 ** virtualize 0-byte filled data
 ** data file with specific offset to expose specific volume
-** overlay wiped vshadow catalog data
-** virtualize missing NTFS backup volume header
 ** open dirty file system with write access, create "shadow" file
 
 20201124

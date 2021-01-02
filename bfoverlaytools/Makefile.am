@@ -19,11 +19,6 @@ bin_PROGRAMS = \
 	bfoverlaymount
 
 bfoverlaymount_SOURCES = \
-	mount_dokan.c mount_dokan.h \
-	mount_file_entry.c mount_file_entry.h \
-	mount_file_system.c mount_file_system.h \
-	mount_fuse.c mount_fuse.h \
-	mount_handle.c mount_handle.h \
 	bfoverlaymount.c \
 	bfoverlaytools_getopt.c bfoverlaytools_getopt.h \
 	bfoverlaytools_i18n.h \
@@ -37,7 +32,12 @@ bfoverlaymount_SOURCES = \
 	bfoverlaytools_libuna.h \
 	bfoverlaytools_output.c bfoverlaytools_output.h \
 	bfoverlaytools_signal.c bfoverlaytools_signal.h \
-	bfoverlaytools_unused.h
+	bfoverlaytools_unused.h \
+	mount_dokan.c mount_dokan.h \
+	mount_file_entry.c mount_file_entry.h \
+	mount_file_system.c mount_file_system.h \
+	mount_fuse.c mount_fuse.h \
+	mount_handle.c mount_handle.h
 
 bfoverlaymount_LDADD = \
 	@LIBFUSE_LIBADD@ \

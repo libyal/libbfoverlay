@@ -1,7 +1,7 @@
 /*
  * The internal extern definition
  *
- * Copyright (C) 2020, Joachim Metz <joachim.metz@gmail.com>
+ * Copyright (C) 2020-2021, Joachim Metz <joachim.metz@gmail.com>
  *
  * Refer to AUTHORS for acknowledgements.
  *
@@ -30,7 +30,7 @@
 
 #include <libbfoverlay/extern.h>
 
-#if defined( __CYGWIN__ )
+#if defined( __CYGWIN__ ) || defined( __MINGW32__ )
 #define LIBBFOVERLAY_EXTERN_VARIABLE	extern
 #else
 #define LIBBFOVERLAY_EXTERN_VARIABLE	LIBBFOVERLAY_EXTERN
