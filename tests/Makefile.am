@@ -1,3 +1,5 @@
+AUTOMAKE_OPTIONS = subdir-objects
+
 AM_CPPFLAGS = \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/common \
@@ -16,12 +18,14 @@ AM_CPPFLAGS = \
 	@LIBBFOVERLAY_DLL_IMPORT@
 
 TESTS = \
-	test_library.sh
+	test_library.sh \
+	test_tools.sh
 
 check_SCRIPTS = \
 	test_library.sh \
 	test_manpage.sh \
-	test_runner.sh
+	test_runner.sh \
+	test_tools.sh
 
 EXTRA_DIST = \
 	$(check_SCRIPTS)
@@ -33,7 +37,9 @@ check_PROGRAMS = \
 	bfoverlay_test_layer \
 	bfoverlay_test_notify \
 	bfoverlay_test_range \
-	bfoverlay_test_support
+	bfoverlay_test_support \
+	bfoverlay_test_tools_output \
+	bfoverlay_test_tools_signal
 
 bfoverlay_test_descriptor_file_SOURCES = \
 	bfoverlay_test_descriptor_file.c \
@@ -137,6 +143,28 @@ bfoverlay_test_support_SOURCES = \
 	bfoverlay_test_unused.h
 
 bfoverlay_test_support_LDADD = \
+	../libbfoverlay/libbfoverlay.la \
+	@LIBCERROR_LIBADD@
+
+bfoverlay_test_tools_output_SOURCES = \
+	../bfoverlaytools/bfoverlaytools_output.c ../bfoverlaytools/bfoverlaytools_output.h \
+	bfoverlay_test_libcerror.h \
+	bfoverlay_test_macros.h \
+	bfoverlay_test_tools_output.c \
+	bfoverlay_test_unused.h
+
+bfoverlay_test_tools_output_LDADD = \
+	../libbfoverlay/libbfoverlay.la \
+	@LIBCERROR_LIBADD@
+
+bfoverlay_test_tools_signal_SOURCES = \
+	../bfoverlaytools/bfoverlaytools_signal.c ../bfoverlaytools/bfoverlaytools_signal.h \
+	bfoverlay_test_libcerror.h \
+	bfoverlay_test_macros.h \
+	bfoverlay_test_tools_signal.c \
+	bfoverlay_test_unused.h
+
+bfoverlay_test_tools_signal_LDADD = \
 	../libbfoverlay/libbfoverlay.la \
 	@LIBCERROR_LIBADD@
 
