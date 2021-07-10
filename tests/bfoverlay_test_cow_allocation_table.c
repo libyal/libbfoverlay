@@ -1,5 +1,5 @@
 /*
- * Library layer type test program
+ * Library cow_allocation_table type test program
  *
  * Copyright (C) 2020-2021, Joachim Metz <joachim.metz@gmail.com>
  *
@@ -20,6 +20,7 @@
  */
 
 #include <common.h>
+#include <byte_stream.h>
 #include <file_stream.h>
 #include <types.h>
 
@@ -27,37 +28,45 @@
 #include <stdlib.h>
 #endif
 
-#include "bfoverlay_test_libbfoverlay.h"
+#include "bfoverlay_test_functions.h"
+#include "bfoverlay_test_libbfio.h"
 #include "bfoverlay_test_libcerror.h"
+#include "bfoverlay_test_libbfoverlay.h"
 #include "bfoverlay_test_macros.h"
 #include "bfoverlay_test_memory.h"
 #include "bfoverlay_test_unused.h"
 
-#include "../libbfoverlay/libbfoverlay_definitions.h"
-#include "../libbfoverlay/libbfoverlay_layer.h"
+#include "../libbfoverlay/libbfoverlay_cow_allocation_table.h"
+
+uint8_t bfoverlay_test_cow_allocation_table_data1[ 64 ] = {
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
 #if defined( __GNUC__ ) && !defined( LIBBFOVERLAY_DLL_IMPORT )
 
-/* Tests the libbfoverlay_layer_initialize function
+/* Tests the libbfoverlay_cow_allocation_table_initialize function
  * Returns 1 if successful or 0 if not
  */
-int bfoverlay_test_layer_initialize(
+int bfoverlay_test_cow_allocation_table_initialize(
      void )
 {
-	libbfoverlay_layer_t *layer     = NULL;
-	libcerror_error_t *error        = NULL;
-	int result                      = 0;
+	libbfoverlay_cow_allocation_table_t *cow_allocation_table = NULL;
+	libcerror_error_t *error                                  = NULL;
+	int result                                                = 0;
 
 #if defined( HAVE_BFOVERLAY_TEST_MEMORY )
-	int number_of_malloc_fail_tests = 1;
-	int number_of_memset_fail_tests = 1;
-	int test_number                 = 0;
+	int number_of_malloc_fail_tests                           = 1;
+	int number_of_memset_fail_tests                           = 1;
+	int test_number                                           = 0;
 #endif
 
 	/* Test regular cases
 	 */
-	result = libbfoverlay_layer_initialize(
-	          &layer,
+	result = libbfoverlay_cow_allocation_table_initialize(
+	          &cow_allocation_table,
+	          8,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -66,15 +75,15 @@ int bfoverlay_test_layer_initialize(
 	 1 );
 
 	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
-	 "layer",
-	 layer );
+	 "cow_allocation_table",
+	 cow_allocation_table );
 
 	BFOVERLAY_TEST_ASSERT_IS_NULL(
 	 "error",
 	 error );
 
-	result = libbfoverlay_layer_free(
-	          &layer,
+	result = libbfoverlay_cow_allocation_table_free(
+	          &cow_allocation_table,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -83,8 +92,8 @@ int bfoverlay_test_layer_initialize(
 	 1 );
 
 	BFOVERLAY_TEST_ASSERT_IS_NULL(
-	 "layer",
-	 layer );
+	 "cow_allocation_table",
+	 cow_allocation_table );
 
 	BFOVERLAY_TEST_ASSERT_IS_NULL(
 	 "error",
@@ -92,8 +101,9 @@ int bfoverlay_test_layer_initialize(
 
 	/* Test error cases
 	 */
-	result = libbfoverlay_layer_initialize(
+	result = libbfoverlay_cow_allocation_table_initialize(
 	          NULL,
+	          8,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -108,13 +118,14 @@ int bfoverlay_test_layer_initialize(
 	libcerror_error_free(
 	 &error );
 
-	layer = (libbfoverlay_layer_t *) 0x12345678UL;
+	cow_allocation_table = (libbfoverlay_cow_allocation_table_t *) 0x12345678UL;
 
-	result = libbfoverlay_layer_initialize(
-	          &layer,
+	result = libbfoverlay_cow_allocation_table_initialize(
+	          &cow_allocation_table,
+	          8,
 	          &error );
 
-	layer = NULL;
+	cow_allocation_table = NULL;
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
 	 "result",
@@ -134,22 +145,23 @@ int bfoverlay_test_layer_initialize(
 	     test_number < number_of_malloc_fail_tests;
 	     test_number++ )
 	{
-		/* Test libbfoverlay_layer_initialize with malloc failing
+		/* Test libbfoverlay_cow_allocation_table_initialize with malloc failing
 		 */
 		bfoverlay_test_malloc_attempts_before_fail = test_number;
 
-		result = libbfoverlay_layer_initialize(
-		          &layer,
+		result = libbfoverlay_cow_allocation_table_initialize(
+		          &cow_allocation_table,
+		          8,
 		          &error );
 
 		if( bfoverlay_test_malloc_attempts_before_fail != -1 )
 		{
 			bfoverlay_test_malloc_attempts_before_fail = -1;
 
-			if( layer != NULL )
+			if( cow_allocation_table != NULL )
 			{
-				libbfoverlay_layer_free(
-				 &layer,
+				libbfoverlay_cow_allocation_table_free(
+				 &cow_allocation_table,
 				 NULL );
 			}
 		}
@@ -161,8 +173,8 @@ int bfoverlay_test_layer_initialize(
 			 -1 );
 
 			BFOVERLAY_TEST_ASSERT_IS_NULL(
-			 "layer",
-			 layer );
+			 "cow_allocation_table",
+			 cow_allocation_table );
 
 			BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
 			 "error",
@@ -176,22 +188,23 @@ int bfoverlay_test_layer_initialize(
 	     test_number < number_of_memset_fail_tests;
 	     test_number++ )
 	{
-		/* Test libbfoverlay_layer_initialize with memset failing
+		/* Test libbfoverlay_cow_allocation_table_initialize with memset failing
 		 */
 		bfoverlay_test_memset_attempts_before_fail = test_number;
 
-		result = libbfoverlay_layer_initialize(
-		          &layer,
+		result = libbfoverlay_cow_allocation_table_initialize(
+		          &cow_allocation_table,
+		          8,
 		          &error );
 
 		if( bfoverlay_test_memset_attempts_before_fail != -1 )
 		{
 			bfoverlay_test_memset_attempts_before_fail = -1;
 
-			if( layer != NULL )
+			if( cow_allocation_table != NULL )
 			{
-				libbfoverlay_layer_free(
-				 &layer,
+				libbfoverlay_cow_allocation_table_free(
+				 &cow_allocation_table,
 				 NULL );
 			}
 		}
@@ -203,8 +216,8 @@ int bfoverlay_test_layer_initialize(
 			 -1 );
 
 			BFOVERLAY_TEST_ASSERT_IS_NULL(
-			 "layer",
-			 layer );
+			 "cow_allocation_table",
+			 cow_allocation_table );
 
 			BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
 			 "error",
@@ -224,19 +237,19 @@ on_error:
 		libcerror_error_free(
 		 &error );
 	}
-	if( layer != NULL )
+	if( cow_allocation_table != NULL )
 	{
-		libbfoverlay_layer_free(
-		 &layer,
+		libbfoverlay_cow_allocation_table_free(
+		 &cow_allocation_table,
 		 NULL );
 	}
 	return( 0 );
 }
 
-/* Tests the libbfoverlay_layer_free function
+/* Tests the libbfoverlay_cow_allocation_table_free function
  * Returns 1 if successful or 0 if not
  */
-int bfoverlay_test_layer_free(
+int bfoverlay_test_cow_allocation_table_free(
      void )
 {
 	libcerror_error_t *error = NULL;
@@ -244,7 +257,7 @@ int bfoverlay_test_layer_free(
 
 	/* Test error cases
 	 */
-	result = libbfoverlay_layer_free(
+	result = libbfoverlay_cow_allocation_table_free(
 	          NULL,
 	          &error );
 
@@ -271,20 +284,21 @@ on_error:
 	return( 0 );
 }
 
-/* Tests the libbfoverlay_layer_set_cow_file_path function
+/* Tests the libbfoverlay_cow_allocation_table_read_data function
  * Returns 1 if successful or 0 if not
  */
-int bfoverlay_test_layer_set_cow_file_path(
+int bfoverlay_test_cow_allocation_table_read_data(
      void )
 {
-	libbfoverlay_layer_t *layer = NULL;
-	libcerror_error_t *error    = NULL;
-	int result                  = 0;
+	libbfoverlay_cow_allocation_table_t *cow_allocation_table = NULL;
+	libcerror_error_t *error                                  = NULL;
+	int result                                                = 0;
 
 	/* Initialize test
 	 */
-	result = libbfoverlay_layer_initialize(
-	          &layer,
+	result = libbfoverlay_cow_allocation_table_initialize(
+	          &cow_allocation_table,
+	          8,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -293,8 +307,8 @@ int bfoverlay_test_layer_set_cow_file_path(
 	 1 );
 
 	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
-	 "layer",
-	 layer );
+	 "cow_allocation_table",
+	 cow_allocation_table );
 
 	BFOVERLAY_TEST_ASSERT_IS_NULL(
 	 "error",
@@ -302,10 +316,10 @@ int bfoverlay_test_layer_set_cow_file_path(
 
 	/* Test regular cases
 	 */
-	result = libbfoverlay_layer_set_cow_file_path(
-	          layer,
-	          (uint8_t *) "/tmp/test",
-	          10,
+	result = libbfoverlay_cow_allocation_table_read_data(
+	          cow_allocation_table,
+	          bfoverlay_test_cow_allocation_table_data1,
+	          64,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -319,68 +333,10 @@ int bfoverlay_test_layer_set_cow_file_path(
 
 	/* Test error cases
 	 */
-	result = libbfoverlay_layer_set_cow_file_path(
-	          layer,
-	          (uint8_t *) "/tmp/test",
-	          10,
-	          &error );
-
-	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
-	 "result",
-	 result,
-	 -1 );
-
-	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
-	 "error",
-	 error );
-
-	libcerror_error_free(
-	 &error );
-
-	/* Clean up
-	 */
-	result = libbfoverlay_layer_free(
-	          &layer,
-	          &error );
-
-	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
-	 "result",
-	 result,
-	 1 );
-
-	BFOVERLAY_TEST_ASSERT_IS_NULL(
-	 "layer",
-	 layer );
-
-	BFOVERLAY_TEST_ASSERT_IS_NULL(
-	 "error",
-	 error );
-
-	/* Initialize test
-	 */
-	result = libbfoverlay_layer_initialize(
-	          &layer,
-	          &error );
-
-	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
-	 "result",
-	 result,
-	 1 );
-
-	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
-	 "layer",
-	 layer );
-
-	BFOVERLAY_TEST_ASSERT_IS_NULL(
-	 "error",
-	 error );
-
-	/* Test error cases
-	 */
-	result = libbfoverlay_layer_set_cow_file_path(
+	result = libbfoverlay_cow_allocation_table_read_data(
 	          NULL,
-	          (uint8_t *) "/tmp/test",
-	          10,
+	          bfoverlay_test_cow_allocation_table_data1,
+	          64,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -395,10 +351,10 @@ int bfoverlay_test_layer_set_cow_file_path(
 	libcerror_error_free(
 	 &error );
 
-	result = libbfoverlay_layer_set_cow_file_path(
-	          layer,
+	result = libbfoverlay_cow_allocation_table_read_data(
+	          cow_allocation_table,
 	          NULL,
-	          10,
+	          64,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -413,9 +369,9 @@ int bfoverlay_test_layer_set_cow_file_path(
 	libcerror_error_free(
 	 &error );
 
-	result = libbfoverlay_layer_set_cow_file_path(
-	          layer,
-	          (uint8_t *) "/tmp/test",
+	result = libbfoverlay_cow_allocation_table_read_data(
+	          cow_allocation_table,
+	          bfoverlay_test_cow_allocation_table_data1,
 	          0,
 	          &error );
 
@@ -431,10 +387,10 @@ int bfoverlay_test_layer_set_cow_file_path(
 	libcerror_error_free(
 	 &error );
 
-	result = libbfoverlay_layer_set_cow_file_path(
-	          layer,
-	          (uint8_t *) "/tmp/test",
-	          LIBBFOVERLAY_MAXIMUM_PATH_SIZE + 1,
+	result = libbfoverlay_cow_allocation_table_read_data(
+	          cow_allocation_table,
+	          bfoverlay_test_cow_allocation_table_data1,
+	          (size_t) SSIZE_MAX + 1,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -451,8 +407,8 @@ int bfoverlay_test_layer_set_cow_file_path(
 
 	/* Clean up
 	 */
-	result = libbfoverlay_layer_free(
-	          &layer,
+	result = libbfoverlay_cow_allocation_table_free(
+	          &cow_allocation_table,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -461,8 +417,8 @@ int bfoverlay_test_layer_set_cow_file_path(
 	 1 );
 
 	BFOVERLAY_TEST_ASSERT_IS_NULL(
-	 "layer",
-	 layer );
+	 "cow_allocation_table",
+	 cow_allocation_table );
 
 	BFOVERLAY_TEST_ASSERT_IS_NULL(
 	 "error",
@@ -476,29 +432,31 @@ on_error:
 		libcerror_error_free(
 		 &error );
 	}
-	if( layer != NULL )
+	if( cow_allocation_table != NULL )
 	{
-		libbfoverlay_layer_free(
-		 &layer,
+		libbfoverlay_cow_allocation_table_free(
+		 &cow_allocation_table,
 		 NULL );
 	}
 	return( 0 );
 }
 
-/* Tests the libbfoverlay_layer_set_data_file_path function
+/* Tests the libbfoverlay_cow_allocation_table_read_file_io_handle function
  * Returns 1 if successful or 0 if not
  */
-int bfoverlay_test_layer_set_data_file_path(
+int bfoverlay_test_cow_allocation_table_read_file_io_handle(
      void )
 {
-	libbfoverlay_layer_t *layer = NULL;
-	libcerror_error_t *error    = NULL;
-	int result                  = 0;
+	libbfio_handle_t *file_io_handle                          = NULL;
+	libbfoverlay_cow_allocation_table_t *cow_allocation_table = NULL;
+	libcerror_error_t *error                                  = NULL;
+	int result                                                = 0;
 
 	/* Initialize test
 	 */
-	result = libbfoverlay_layer_initialize(
-	          &layer,
+	result = libbfoverlay_cow_allocation_table_initialize(
+	          &cow_allocation_table,
+	          8,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -507,8 +465,29 @@ int bfoverlay_test_layer_set_data_file_path(
 	 1 );
 
 	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
-	 "layer",
-	 layer );
+	 "cow_allocation_table",
+	 cow_allocation_table );
+
+	BFOVERLAY_TEST_ASSERT_IS_NULL(
+	 "error",
+	 error );
+
+	/* Initialize file IO handle
+	 */
+	result = bfoverlay_test_open_file_io_handle(
+	          &file_io_handle,
+	          bfoverlay_test_cow_allocation_table_data1,
+	          64,
+	          &error );
+
+	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
+	 "result",
+	 result,
+	 1 );
+
+	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
+	 "file_io_handle",
+	 file_io_handle );
 
 	BFOVERLAY_TEST_ASSERT_IS_NULL(
 	 "error",
@@ -516,10 +495,10 @@ int bfoverlay_test_layer_set_data_file_path(
 
 	/* Test regular cases
 	 */
-	result = libbfoverlay_layer_set_data_file_path(
-	          layer,
-	          (uint8_t *) "/tmp/test",
-	          10,
+	result = libbfoverlay_cow_allocation_table_read_file_io_handle(
+	          cow_allocation_table,
+	          file_io_handle,
+	          0,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -533,103 +512,9 @@ int bfoverlay_test_layer_set_data_file_path(
 
 	/* Test error cases
 	 */
-	result = libbfoverlay_layer_set_data_file_path(
-	          layer,
-	          (uint8_t *) "/tmp/test",
-	          10,
-	          &error );
-
-	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
-	 "result",
-	 result,
-	 -1 );
-
-	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
-	 "error",
-	 error );
-
-	libcerror_error_free(
-	 &error );
-
-	/* Clean up
-	 */
-	result = libbfoverlay_layer_free(
-	          &layer,
-	          &error );
-
-	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
-	 "result",
-	 result,
-	 1 );
-
-	BFOVERLAY_TEST_ASSERT_IS_NULL(
-	 "layer",
-	 layer );
-
-	BFOVERLAY_TEST_ASSERT_IS_NULL(
-	 "error",
-	 error );
-
-	/* Initialize test
-	 */
-	result = libbfoverlay_layer_initialize(
-	          &layer,
-	          &error );
-
-	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
-	 "result",
-	 result,
-	 1 );
-
-	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
-	 "layer",
-	 layer );
-
-	BFOVERLAY_TEST_ASSERT_IS_NULL(
-	 "error",
-	 error );
-
-	/* Test error cases
-	 */
-	result = libbfoverlay_layer_set_data_file_path(
+	result = libbfoverlay_cow_allocation_table_read_file_io_handle(
 	          NULL,
-	          (uint8_t *) "/tmp/test",
-	          10,
-	          &error );
-
-	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
-	 "result",
-	 result,
-	 -1 );
-
-	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
-	 "error",
-	 error );
-
-	libcerror_error_free(
-	 &error );
-
-	result = libbfoverlay_layer_set_data_file_path(
-	          layer,
-	          NULL,
-	          10,
-	          &error );
-
-	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
-	 "result",
-	 result,
-	 -1 );
-
-	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
-	 "error",
-	 error );
-
-	libcerror_error_free(
-	 &error );
-
-	result = libbfoverlay_layer_set_data_file_path(
-	          layer,
-	          (uint8_t *) "/tmp/test",
+	          file_io_handle,
 	          0,
 	          &error );
 
@@ -645,10 +530,10 @@ int bfoverlay_test_layer_set_data_file_path(
 	libcerror_error_free(
 	 &error );
 
-	result = libbfoverlay_layer_set_data_file_path(
-	          layer,
-	          (uint8_t *) "/tmp/test",
-	          LIBBFOVERLAY_MAXIMUM_PATH_SIZE + 1,
+	result = libbfoverlay_cow_allocation_table_read_file_io_handle(
+	          cow_allocation_table,
+	          NULL,
+	          0,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -663,10 +548,77 @@ int bfoverlay_test_layer_set_data_file_path(
 	libcerror_error_free(
 	 &error );
 
+	/* Clean up file IO handle
+	 */
+	result = bfoverlay_test_close_file_io_handle(
+	          &file_io_handle,
+	          &error );
+
+	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
+	 "result",
+	 result,
+	 0 );
+
+	BFOVERLAY_TEST_ASSERT_IS_NULL(
+	 "error",
+	 error );
+
+	/* Test data too small
+	 */
+	result = bfoverlay_test_open_file_io_handle(
+	          &file_io_handle,
+	          bfoverlay_test_cow_allocation_table_data1,
+	          8,
+	          &error );
+
+	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
+	 "result",
+	 result,
+	 1 );
+
+	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
+	 "file_io_handle",
+	 file_io_handle );
+
+	BFOVERLAY_TEST_ASSERT_IS_NULL(
+	 "error",
+	 error );
+
+	result = libbfoverlay_cow_allocation_table_read_file_io_handle(
+	          cow_allocation_table,
+	          file_io_handle,
+	          0,
+	          &error );
+
+	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
+	 "result",
+	 result,
+	 -1 );
+
+	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
+	 "error",
+	 error );
+
+	libcerror_error_free(
+	 &error );
+
+	result = bfoverlay_test_close_file_io_handle(
+	          &file_io_handle,
+	          &error );
+
+	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
+	 "result",
+	 result,
+	 0 );
+
+	BFOVERLAY_TEST_ASSERT_IS_NULL(
+	 "error",
+	 error );
+
 	/* Clean up
 	 */
-	result = libbfoverlay_layer_free(
-	          &layer,
+	result = libbfoverlay_cow_allocation_table_free(
+	          &cow_allocation_table,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -675,8 +627,8 @@ int bfoverlay_test_layer_set_data_file_path(
 	 1 );
 
 	BFOVERLAY_TEST_ASSERT_IS_NULL(
-	 "layer",
-	 layer );
+	 "cow_allocation_table",
+	 cow_allocation_table );
 
 	BFOVERLAY_TEST_ASSERT_IS_NULL(
 	 "error",
@@ -690,10 +642,16 @@ on_error:
 		libcerror_error_free(
 		 &error );
 	}
-	if( layer != NULL )
+	if( file_io_handle != NULL )
 	{
-		libbfoverlay_layer_free(
-		 &layer,
+		libbfio_handle_free(
+		 &file_io_handle,
+		 NULL );
+	}
+	if( cow_allocation_table != NULL )
+	{
+		libbfoverlay_cow_allocation_table_free(
+		 &cow_allocation_table,
 		 NULL );
 	}
 	return( 0 );
@@ -719,20 +677,22 @@ int main(
 #if defined( __GNUC__ ) && !defined( LIBBFOVERLAY_DLL_IMPORT )
 
 	BFOVERLAY_TEST_RUN(
-	 "libbfoverlay_layer_initialize",
-	 bfoverlay_test_layer_initialize );
+	 "libbfoverlay_cow_allocation_table_initialize",
+	 bfoverlay_test_cow_allocation_table_initialize );
 
 	BFOVERLAY_TEST_RUN(
-	 "libbfoverlay_layer_free",
-	 bfoverlay_test_layer_free );
+	 "libbfoverlay_cow_allocation_table_free",
+	 bfoverlay_test_cow_allocation_table_free );
 
 	BFOVERLAY_TEST_RUN(
-	 "libbfoverlay_layer_set_cow_file_path",
-	 bfoverlay_test_layer_set_cow_file_path );
+	 "libbfoverlay_cow_allocation_table_read_data",
+	 bfoverlay_test_cow_allocation_table_read_data );
 
 	BFOVERLAY_TEST_RUN(
-	 "libbfoverlay_layer_set_data_file_path",
-	 bfoverlay_test_layer_set_data_file_path );
+	 "libbfoverlay_cow_allocation_table_read_file_io_handle",
+	 bfoverlay_test_cow_allocation_table_read_file_io_handle );
+
+	/* TODO add tests for libbfoverlay_cow_allocation_table_write_file_io_handle */
 
 #endif /* defined( __GNUC__ ) && !defined( LIBBFOVERLAY_DLL_IMPORT ) */
 

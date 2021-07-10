@@ -6,7 +6,7 @@ $ExitSuccess = 0
 $ExitFailure = 1
 $ExitIgnore = 77
 
-$LibraryTests = "descriptor_file error layer notify range support"
+$LibraryTests = "cow_allocation_table cow_file cow_file_header descriptor_file error layer notify range support"
 $LibraryTestsWithInput = "handle"
 $OptionSets = ""
 

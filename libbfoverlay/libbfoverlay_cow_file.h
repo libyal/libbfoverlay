@@ -1,5 +1,5 @@
 /*
- * Layer functions
+ * Copy-on-write (COW) file functions
  *
  * Copyright (C) 2020-2021, Joachim Metz <joachim.metz@gmail.com>
  *
@@ -19,74 +19,49 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#if !defined( _LIBBFOVERLAY_LAYER_H )
-#define _LIBBFOVERLAY_LAYER_H
+#if !defined( _LIBBFOVERLAY_COW_FILE_H )
+#define _LIBBFOVERLAY_COW_FILE_H
 
 #include <common.h>
 #include <types.h>
 
+#include "libbfoverlay_libbfio.h"
 #include "libbfoverlay_libcerror.h"
 
 #if defined( __cplusplus )
 extern "C" {
 #endif
 
-typedef struct libbfoverlay_layer libbfoverlay_layer_t;
+typedef struct libbfoverlay_cow_file libbfoverlay_cow_file_t;
 
-struct libbfoverlay_layer
+struct libbfoverlay_cow_file
 {
-	/* Offset
+	/* Data size
 	 */
-	off64_t offset;
-
-	/* Size
-	 */
-	int64_t size;
-
-	/* Data file path
-	 */
-	uint8_t *data_file_path;
-
-	/* Data file path size
-	 */
-	size_t data_file_path_size;
-
-	/* Data file offset
-	 */
-	off64_t file_offset;
-
-	/* COW file path
-	 */
-	uint8_t *cow_file_path;
-
-	/* COW file path size
-	 */
-	size_t cow_file_path_size;
+	size64_t data_size;
 };
 
-int libbfoverlay_layer_initialize(
-     libbfoverlay_layer_t **layer,
+int libbfoverlay_cow_file_initialize(
+     libbfoverlay_cow_file_t **cow_file,
+     size64_t data_size,
      libcerror_error_t **error );
 
-int libbfoverlay_layer_free(
-     libbfoverlay_layer_t **layer,
+int libbfoverlay_cow_file_free(
+     libbfoverlay_cow_file_t **cow_file,
      libcerror_error_t **error );
 
-int libbfoverlay_layer_set_cow_file_path(
-     libbfoverlay_layer_t *layer,
-     const uint8_t *path,
-     size_t path_size,
+int libbfoverlay_cow_file_open_file_io_handle(
+     libbfoverlay_cow_file_t *cow_file,
+     libbfio_handle_t *file_io_handle,
      libcerror_error_t **error );
 
-int libbfoverlay_layer_set_data_file_path(
-     libbfoverlay_layer_t *layer,
-     const uint8_t *path,
-     size_t path_size,
+int libbfoverlay_cow_file_close(
+     libbfoverlay_cow_file_t *cow_file,
      libcerror_error_t **error );
 
 #if defined( __cplusplus )
 }
 #endif
 
-#endif /* !defined( _LIBBFOVERLAY_LAYER_H ) */
+#endif /* !defined( _LIBBFOVERLAY_COW_FILE_H ) */
 

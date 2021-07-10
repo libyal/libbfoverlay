@@ -23,8 +23,10 @@
 #include <memory.h>
 #include <types.h>
 
+#include "libbfoverlay_definitions.h"
 #include "libbfoverlay_descriptor_file.h"
 #include "libbfoverlay_layer.h"
+#include "libbfoverlay_libbfio.h"
 #include "libbfoverlay_libcdata.h"
 #include "libbfoverlay_libcerror.h"
 #include "libbfoverlay_libfvalue.h"
@@ -472,7 +474,7 @@ int libbfoverlay_descriptor_file_read_data(
 			            6 ) == 0 )
 			      && ( value_string[ value_string_size - 2 ] == '"' ) )
 			{
-				if( libbfoverlay_layer_set_file_path(
+				if( libbfoverlay_layer_set_data_file_path(
 				     layer,
 				     &( value_string[ 6 ] ),
 				     value_string_size - 7,
@@ -482,7 +484,7 @@ int libbfoverlay_descriptor_file_read_data(
 					 error,
 					 LIBCERROR_ERROR_DOMAIN_MEMORY,
 					 LIBCERROR_MEMORY_ERROR_SET_FAILED,
-					 "%s: unable to set layer: %d file path.",
+					 "%s: unable to set layer: %d data file path.",
 					 function,
 					 layer_index );
 
@@ -508,6 +510,30 @@ int libbfoverlay_descriptor_file_read_data(
 					 LIBCERROR_ERROR_DOMAIN_MEMORY,
 					 LIBCERROR_MEMORY_ERROR_SET_FAILED,
 					 "%s: unable to set layer: %d offset.",
+					 function,
+					 layer_index );
+
+					goto on_error;
+				}
+			}
+			else if( ( value_string_size > 11 )
+			      && ( memory_compare(
+			            value_string,
+			            "cow_file=\"",
+			            10 ) == 0 )
+			      && ( value_string[ value_string_size - 2 ] == '"' ) )
+			{
+				if( libbfoverlay_layer_set_cow_file_path(
+				     layer,
+				     &( value_string[ 10 ] ),
+				     value_string_size - 11,
+				     error ) != 1 )
+				{
+					libcerror_error_set(
+					 error,
+					 LIBCERROR_ERROR_DOMAIN_MEMORY,
+					 LIBCERROR_MEMORY_ERROR_SET_FAILED,
+					 "%s: unable to set layer: %d COW file path.",
 					 function,
 					 layer_index );
 
@@ -565,7 +591,7 @@ int libbfoverlay_descriptor_file_read_data(
 
 			goto on_error;
 		}
-		if( layer->file_path == NULL )
+		if( layer->data_file_path == NULL )
 		{
 			if( layer->size == -1 )
 			{
@@ -573,7 +599,7 @@ int libbfoverlay_descriptor_file_read_data(
 				 error,
 				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
 				 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
-				 "%s: invalid layer: %d size value out of bounds - size of layer without a file path must be 0 or greater.",
+				 "%s: invalid layer: %d size value out of bounds - size of layer without a data file must be 0 or greater.",
 				 function,
 				 layer_index );
 
@@ -585,7 +611,7 @@ int libbfoverlay_descriptor_file_read_data(
 				 error,
 				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
 				 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
-				 "%s: invalid layer: %d file offset specified without file path.",
+				 "%s: invalid layer: %d file offset specified without data file.",
 				 function,
 				 layer_index );
 
@@ -612,7 +638,7 @@ int libbfoverlay_descriptor_file_read_data(
 
 				goto on_error;
 			}
-			if( ( layer->file_path == NULL )
+			if( ( layer->data_file_path == NULL )
 			 || ( layer->size != -1 ) )
 			{
 				base_layer_size = layer->size;
@@ -769,7 +795,7 @@ int libbfoverlay_descriptor_file_read_file_io_handle(
 		goto on_error;
 	}
 	if( ( file_size == 0 )
-	 || ( file_size > ( 1024 * 1024 ) ) )
+	 || ( file_size > LIBBFOVERLAY_MAXIMUM_DESCRIPTOR_FILE_SIZE ) )
 	{
 		libcerror_error_set(
 		 error,

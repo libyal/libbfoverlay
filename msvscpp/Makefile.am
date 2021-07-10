@@ -1,4 +1,7 @@
 MSVSCPP_FILES = \
+	bfoverlay_test_cow_allocation_table/bfoverlay_test_cow_allocation_table.vcproj \
+	bfoverlay_test_cow_file/bfoverlay_test_cow_file.vcproj \
+	bfoverlay_test_cow_file_header/bfoverlay_test_cow_file_header.vcproj \
 	bfoverlay_test_descriptor_file/bfoverlay_test_descriptor_file.vcproj \
 	bfoverlay_test_error/bfoverlay_test_error.vcproj \
 	bfoverlay_test_handle/bfoverlay_test_handle.vcproj \

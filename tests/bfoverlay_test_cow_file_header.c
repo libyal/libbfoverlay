@@ -1,5 +1,5 @@
 /*
- * Library descriptor_file type test program
+ * Library cow_file_header type test program
  *
  * Copyright (C) 2020-2021, Joachim Metz <joachim.metz@gmail.com>
  *
@@ -20,6 +20,7 @@
  */
 
 #include <common.h>
+#include <byte_stream.h>
 #include <file_stream.h>
 #include <types.h>
 
@@ -29,47 +30,42 @@
 
 #include "bfoverlay_test_functions.h"
 #include "bfoverlay_test_libbfio.h"
-#include "bfoverlay_test_libbfoverlay.h"
 #include "bfoverlay_test_libcerror.h"
+#include "bfoverlay_test_libbfoverlay.h"
 #include "bfoverlay_test_macros.h"
 #include "bfoverlay_test_memory.h"
 #include "bfoverlay_test_unused.h"
 
-#include "../libbfoverlay/libbfoverlay_descriptor_file.h"
+#include "../libbfoverlay/libbfoverlay_cow_file_header.h"
 
-uint8_t bfoverlay_test_descriptor_file_data1[ 138 ] = {
+uint8_t bfoverlay_test_cow_file_header_data1[ 64 ] = {
 	0x23, 0x20, 0x62, 0x61, 0x73, 0x69, 0x63, 0x20, 0x66, 0x69, 0x6c, 0x65, 0x20, 0x6f, 0x76, 0x65,
-	0x72, 0x6c, 0x61, 0x79, 0x20, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x6f, 0x72, 0x20,
-	0x66, 0x69, 0x6c, 0x65, 0x0a, 0x6c, 0x61, 0x79, 0x65, 0x72, 0x3a, 0x20, 0x6f, 0x66, 0x66, 0x73,
-	0x65, 0x74, 0x3d, 0x30, 0x20, 0x73, 0x69, 0x7a, 0x65, 0x3d, 0x32, 0x31, 0x34, 0x37, 0x34, 0x38,
-	0x33, 0x36, 0x34, 0x38, 0x0a, 0x6c, 0x61, 0x79, 0x65, 0x72, 0x3a, 0x20, 0x6f, 0x66, 0x66, 0x73,
-	0x65, 0x74, 0x3d, 0x31, 0x36, 0x37, 0x37, 0x37, 0x32, 0x31, 0x36, 0x20, 0x73, 0x69, 0x7a, 0x65,
-	0x3d, 0x31, 0x30, 0x37, 0x33, 0x37, 0x34, 0x31, 0x38, 0x32, 0x34, 0x20, 0x66, 0x69, 0x6c, 0x65,
-	0x3d, 0x22, 0x6e, 0x74, 0x66, 0x73, 0x2e, 0x72, 0x61, 0x77, 0x22, 0x20, 0x66, 0x69, 0x6c, 0x65,
-	0x5f, 0x6f, 0x66, 0x66, 0x73, 0x65, 0x74, 0x3d, 0x30, 0x0a };
+	0x72, 0x6c, 0x61, 0x79, 0x20, 0x43, 0x4f, 0x57, 0x20, 0x66, 0x69, 0x6c, 0x65, 0x00, 0x00, 0x00,
+	0x01, 0x34, 0x64, 0x16, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
 #if defined( __GNUC__ ) && !defined( LIBBFOVERLAY_DLL_IMPORT )
 
-/* Tests the libbfoverlay_descriptor_file_initialize function
+/* Tests the libbfoverlay_cow_file_header_initialize function
  * Returns 1 if successful or 0 if not
  */
-int bfoverlay_test_descriptor_file_initialize(
+int bfoverlay_test_cow_file_header_initialize(
      void )
 {
-	libbfoverlay_descriptor_file_t *descriptor_file = NULL;
+	libbfoverlay_cow_file_header_t *cow_file_header = NULL;
 	libcerror_error_t *error                        = NULL;
 	int result                                      = 0;
 
 #if defined( HAVE_BFOVERLAY_TEST_MEMORY )
-	int number_of_malloc_fail_tests                 = 2;
+	int number_of_malloc_fail_tests                 = 1;
 	int number_of_memset_fail_tests                 = 1;
 	int test_number                                 = 0;
 #endif
 
 	/* Test regular cases
 	 */
-	result = libbfoverlay_descriptor_file_initialize(
-	          &descriptor_file,
+	result = libbfoverlay_cow_file_header_initialize(
+	          &cow_file_header,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -78,15 +74,15 @@ int bfoverlay_test_descriptor_file_initialize(
 	 1 );
 
 	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
-	 "descriptor_file",
-	 descriptor_file );
+	 "cow_file_header",
+	 cow_file_header );
 
 	BFOVERLAY_TEST_ASSERT_IS_NULL(
 	 "error",
 	 error );
 
-	result = libbfoverlay_descriptor_file_free(
-	          &descriptor_file,
+	result = libbfoverlay_cow_file_header_free(
+	          &cow_file_header,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -95,8 +91,8 @@ int bfoverlay_test_descriptor_file_initialize(
 	 1 );
 
 	BFOVERLAY_TEST_ASSERT_IS_NULL(
-	 "descriptor_file",
-	 descriptor_file );
+	 "cow_file_header",
+	 cow_file_header );
 
 	BFOVERLAY_TEST_ASSERT_IS_NULL(
 	 "error",
@@ -104,7 +100,7 @@ int bfoverlay_test_descriptor_file_initialize(
 
 	/* Test error cases
 	 */
-	result = libbfoverlay_descriptor_file_initialize(
+	result = libbfoverlay_cow_file_header_initialize(
 	          NULL,
 	          &error );
 
@@ -120,13 +116,13 @@ int bfoverlay_test_descriptor_file_initialize(
 	libcerror_error_free(
 	 &error );
 
-	descriptor_file = (libbfoverlay_descriptor_file_t *) 0x12345678UL;
+	cow_file_header = (libbfoverlay_cow_file_header_t *) 0x12345678UL;
 
-	result = libbfoverlay_descriptor_file_initialize(
-	          &descriptor_file,
+	result = libbfoverlay_cow_file_header_initialize(
+	          &cow_file_header,
 	          &error );
 
-	descriptor_file = NULL;
+	cow_file_header = NULL;
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
 	 "result",
@@ -146,22 +142,22 @@ int bfoverlay_test_descriptor_file_initialize(
 	     test_number < number_of_malloc_fail_tests;
 	     test_number++ )
 	{
-		/* Test libbfoverlay_descriptor_file_initialize with malloc failing
+		/* Test libbfoverlay_cow_file_header_initialize with malloc failing
 		 */
 		bfoverlay_test_malloc_attempts_before_fail = test_number;
 
-		result = libbfoverlay_descriptor_file_initialize(
-		          &descriptor_file,
+		result = libbfoverlay_cow_file_header_initialize(
+		          &cow_file_header,
 		          &error );
 
 		if( bfoverlay_test_malloc_attempts_before_fail != -1 )
 		{
 			bfoverlay_test_malloc_attempts_before_fail = -1;
 
-			if( descriptor_file != NULL )
+			if( cow_file_header != NULL )
 			{
-				libbfoverlay_descriptor_file_free(
-				 &descriptor_file,
+				libbfoverlay_cow_file_header_free(
+				 &cow_file_header,
 				 NULL );
 			}
 		}
@@ -173,8 +169,8 @@ int bfoverlay_test_descriptor_file_initialize(
 			 -1 );
 
 			BFOVERLAY_TEST_ASSERT_IS_NULL(
-			 "descriptor_file",
-			 descriptor_file );
+			 "cow_file_header",
+			 cow_file_header );
 
 			BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
 			 "error",
@@ -188,22 +184,22 @@ int bfoverlay_test_descriptor_file_initialize(
 	     test_number < number_of_memset_fail_tests;
 	     test_number++ )
 	{
-		/* Test libbfoverlay_descriptor_file_initialize with memset failing
+		/* Test libbfoverlay_cow_file_header_initialize with memset failing
 		 */
 		bfoverlay_test_memset_attempts_before_fail = test_number;
 
-		result = libbfoverlay_descriptor_file_initialize(
-		          &descriptor_file,
+		result = libbfoverlay_cow_file_header_initialize(
+		          &cow_file_header,
 		          &error );
 
 		if( bfoverlay_test_memset_attempts_before_fail != -1 )
 		{
 			bfoverlay_test_memset_attempts_before_fail = -1;
 
-			if( descriptor_file != NULL )
+			if( cow_file_header != NULL )
 			{
-				libbfoverlay_descriptor_file_free(
-				 &descriptor_file,
+				libbfoverlay_cow_file_header_free(
+				 &cow_file_header,
 				 NULL );
 			}
 		}
@@ -215,8 +211,8 @@ int bfoverlay_test_descriptor_file_initialize(
 			 -1 );
 
 			BFOVERLAY_TEST_ASSERT_IS_NULL(
-			 "descriptor_file",
-			 descriptor_file );
+			 "cow_file_header",
+			 cow_file_header );
 
 			BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
 			 "error",
@@ -236,19 +232,19 @@ on_error:
 		libcerror_error_free(
 		 &error );
 	}
-	if( descriptor_file != NULL )
+	if( cow_file_header != NULL )
 	{
-		libbfoverlay_descriptor_file_free(
-		 &descriptor_file,
+		libbfoverlay_cow_file_header_free(
+		 &cow_file_header,
 		 NULL );
 	}
 	return( 0 );
 }
 
-/* Tests the libbfoverlay_descriptor_file_free function
+/* Tests the libbfoverlay_cow_file_header_free function
  * Returns 1 if successful or 0 if not
  */
-int bfoverlay_test_descriptor_file_free(
+int bfoverlay_test_cow_file_header_free(
      void )
 {
 	libcerror_error_t *error = NULL;
@@ -256,7 +252,7 @@ int bfoverlay_test_descriptor_file_free(
 
 	/* Test error cases
 	 */
-	result = libbfoverlay_descriptor_file_free(
+	result = libbfoverlay_cow_file_header_free(
 	          NULL,
 	          &error );
 
@@ -283,20 +279,20 @@ on_error:
 	return( 0 );
 }
 
-/* Tests the libbfoverlay_descriptor_file_read_data function
+/* Tests the libbfoverlay_cow_file_header_read_data function
  * Returns 1 if successful or 0 if not
  */
-int bfoverlay_test_descriptor_file_read_data(
+int bfoverlay_test_cow_file_header_read_data(
      void )
 {
-	libbfoverlay_descriptor_file_t *descriptor_file = NULL;
+	libbfoverlay_cow_file_header_t *cow_file_header = NULL;
 	libcerror_error_t *error                        = NULL;
 	int result                                      = 0;
 
 	/* Initialize test
 	 */
-	result = libbfoverlay_descriptor_file_initialize(
-	          &descriptor_file,
+	result = libbfoverlay_cow_file_header_initialize(
+	          &cow_file_header,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -305,8 +301,8 @@ int bfoverlay_test_descriptor_file_read_data(
 	 1 );
 
 	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
-	 "descriptor_file",
-	 descriptor_file );
+	 "cow_file_header",
+	 cow_file_header );
 
 	BFOVERLAY_TEST_ASSERT_IS_NULL(
 	 "error",
@@ -314,10 +310,10 @@ int bfoverlay_test_descriptor_file_read_data(
 
 	/* Test regular cases
 	 */
-	result = libbfoverlay_descriptor_file_read_data(
-	          descriptor_file,
-	          bfoverlay_test_descriptor_file_data1,
-	          138,
+	result = libbfoverlay_cow_file_header_read_data(
+	          cow_file_header,
+	          bfoverlay_test_cow_file_header_data1,
+	          64,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -329,12 +325,17 @@ int bfoverlay_test_descriptor_file_read_data(
 	 "error",
 	 error );
 
+	BFOVERLAY_TEST_ASSERT_EQUAL_UINT32(
+	 "cow_file_header->format_version",
+	 cow_file_header->format_version,
+	 20210710 );
+
 	/* Test error cases
 	 */
-	result = libbfoverlay_descriptor_file_read_data(
+	result = libbfoverlay_cow_file_header_read_data(
 	          NULL,
-	          bfoverlay_test_descriptor_file_data1,
-	          138,
+	          bfoverlay_test_cow_file_header_data1,
+	          64,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -349,10 +350,10 @@ int bfoverlay_test_descriptor_file_read_data(
 	libcerror_error_free(
 	 &error );
 
-	result = libbfoverlay_descriptor_file_read_data(
-	          descriptor_file,
+	result = libbfoverlay_cow_file_header_read_data(
+	          cow_file_header,
 	          NULL,
-	          138,
+	          64,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -367,28 +368,28 @@ int bfoverlay_test_descriptor_file_read_data(
 	libcerror_error_free(
 	 &error );
 
-	result = libbfoverlay_descriptor_file_read_data(
-	          descriptor_file,
-	          bfoverlay_test_descriptor_file_data1,
-	          (size_t) SSIZE_MAX + 1,
-	          &error );
-
-	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
-	 "result",
-	 result,
-	 -1 );
-
-	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
-	 "error",
-	 error );
-
-	libcerror_error_free(
-	 &error );
-
-	result = libbfoverlay_descriptor_file_read_data(
-	          descriptor_file,
-	          bfoverlay_test_descriptor_file_data1,
+	result = libbfoverlay_cow_file_header_read_data(
+	          cow_file_header,
+	          bfoverlay_test_cow_file_header_data1,
 	          0,
+	          &error );
+
+	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
+	 "result",
+	 result,
+	 -1 );
+
+	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
+	 "error",
+	 error );
+
+	libcerror_error_free(
+	 &error );
+
+	result = libbfoverlay_cow_file_header_read_data(
+	          cow_file_header,
+	          bfoverlay_test_cow_file_header_data1,
+	          (size_t) SSIZE_MAX + 1,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -405,155 +406,15 @@ int bfoverlay_test_descriptor_file_read_data(
 
 	/* Test error case where signature is invalid
 	 */
-	bfoverlay_test_descriptor_file_data1[ 2 ] = 0xff;
+	bfoverlay_test_cow_file_header_data1[ 0 ] = '!';
 
-	result = libbfoverlay_descriptor_file_read_data(
-	          descriptor_file,
-	          bfoverlay_test_descriptor_file_data1,
-	          138,
+	result = libbfoverlay_cow_file_header_read_data(
+	          cow_file_header,
+	          bfoverlay_test_cow_file_header_data1,
+	          64,
 	          &error );
 
-	bfoverlay_test_descriptor_file_data1[ 2 ] = 'b';
-
-	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
-	 "result",
-	 result,
-	 -1 );
-
-	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
-	 "error",
-	 error );
-
-	libcerror_error_free(
-	 &error );
-
-	/* Test error case where there are insufficient number of lines
-	 */
-	result = libbfoverlay_descriptor_file_read_data(
-	          descriptor_file,
-	          bfoverlay_test_descriptor_file_data1,
-	          37,
-	          &error );
-
-	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
-	 "result",
-	 result,
-	 -1 );
-
-	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
-	 "error",
-	 error );
-
-	libcerror_error_free(
-	 &error );
-
-	/* Test error case where line does not start with "layer:"
-	 */
-	bfoverlay_test_descriptor_file_data1[ 37 ] = 0xff;
-
-	result = libbfoverlay_descriptor_file_read_data(
-	          descriptor_file,
-	          bfoverlay_test_descriptor_file_data1,
-	          138,
-	          &error );
-
-	bfoverlay_test_descriptor_file_data1[ 37 ] = 'l';
-
-	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
-	 "result",
-	 result,
-	 -1 );
-
-	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
-	 "error",
-	 error );
-
-	libcerror_error_free(
-	 &error );
-
-	/* Test error case where there are insufficient number of values on a line
-	 */
-	bfoverlay_test_descriptor_file_data1[ 52 ] = '_';
-
-	result = libbfoverlay_descriptor_file_read_data(
-	          descriptor_file,
-	          bfoverlay_test_descriptor_file_data1,
-	          138,
-	          &error );
-
-	bfoverlay_test_descriptor_file_data1[ 52 ] = ' ';
-
-	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
-	 "result",
-	 result,
-	 -1 );
-
-	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
-	 "error",
-	 error );
-
-	libcerror_error_free(
-	 &error );
-
-	/* Test error case with invalid offset definition
-	 */
-	bfoverlay_test_descriptor_file_data1[ 84 ] = '_';
-
-	result = libbfoverlay_descriptor_file_read_data(
-	          descriptor_file,
-	          bfoverlay_test_descriptor_file_data1,
-	          138,
-	          &error );
-
-	bfoverlay_test_descriptor_file_data1[ 84 ] = '6';
-
-	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
-	 "result",
-	 result,
-	 -1 );
-
-	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
-	 "error",
-	 error );
-
-	libcerror_error_free(
-	 &error );
-
-	/* Test error case with invalid size definition
-	 */
-	bfoverlay_test_descriptor_file_data1[ 58 ] = '_';
-
-	result = libbfoverlay_descriptor_file_read_data(
-	          descriptor_file,
-	          bfoverlay_test_descriptor_file_data1,
-	          138,
-	          &error );
-
-	bfoverlay_test_descriptor_file_data1[ 58 ] = '1';
-
-	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
-	 "result",
-	 result,
-	 -1 );
-
-	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
-	 "error",
-	 error );
-
-	libcerror_error_free(
-	 &error );
-
-	/* Test error case with unsupported value in layer
-	 */
-	bfoverlay_test_descriptor_file_data1[ 56 ] = 'y';
-
-	result = libbfoverlay_descriptor_file_read_data(
-	          descriptor_file,
-	          bfoverlay_test_descriptor_file_data1,
-	          138,
-	          &error );
-
-	bfoverlay_test_descriptor_file_data1[ 56 ] = 'e';
+	bfoverlay_test_cow_file_header_data1[ 0 ] = '#';
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
 	 "result",
@@ -569,8 +430,8 @@ int bfoverlay_test_descriptor_file_read_data(
 
 	/* Clean up
 	 */
-	result = libbfoverlay_descriptor_file_free(
-	          &descriptor_file,
+	result = libbfoverlay_cow_file_header_free(
+	          &cow_file_header,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -579,8 +440,8 @@ int bfoverlay_test_descriptor_file_read_data(
 	 1 );
 
 	BFOVERLAY_TEST_ASSERT_IS_NULL(
-	 "descriptor_file",
-	 descriptor_file );
+	 "cow_file_header",
+	 cow_file_header );
 
 	BFOVERLAY_TEST_ASSERT_IS_NULL(
 	 "error",
@@ -594,30 +455,30 @@ on_error:
 		libcerror_error_free(
 		 &error );
 	}
-	if( descriptor_file != NULL )
+	if( cow_file_header != NULL )
 	{
-		libbfoverlay_descriptor_file_free(
-		 &descriptor_file,
+		libbfoverlay_cow_file_header_free(
+		 &cow_file_header,
 		 NULL );
 	}
 	return( 0 );
 }
 
-/* Tests the libbfoverlay_descriptor_file_read_file_io_handle function
+/* Tests the libbfoverlay_cow_file_header_read_file_io_handle function
  * Returns 1 if successful or 0 if not
  */
-int bfoverlay_test_descriptor_file_read_file_io_handle(
+int bfoverlay_test_cow_file_header_read_file_io_handle(
      void )
 {
 	libbfio_handle_t *file_io_handle                = NULL;
-	libbfoverlay_descriptor_file_t *descriptor_file = NULL;
+	libbfoverlay_cow_file_header_t *cow_file_header = NULL;
 	libcerror_error_t *error                        = NULL;
 	int result                                      = 0;
 
 	/* Initialize test
 	 */
-	result = libbfoverlay_descriptor_file_initialize(
-	          &descriptor_file,
+	result = libbfoverlay_cow_file_header_initialize(
+	          &cow_file_header,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -626,8 +487,8 @@ int bfoverlay_test_descriptor_file_read_file_io_handle(
 	 1 );
 
 	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
-	 "descriptor_file",
-	 descriptor_file );
+	 "cow_file_header",
+	 cow_file_header );
 
 	BFOVERLAY_TEST_ASSERT_IS_NULL(
 	 "error",
@@ -637,8 +498,8 @@ int bfoverlay_test_descriptor_file_read_file_io_handle(
 	 */
 	result = bfoverlay_test_open_file_io_handle(
 	          &file_io_handle,
-	          bfoverlay_test_descriptor_file_data1,
-	          138,
+	          bfoverlay_test_cow_file_header_data1,
+	          64,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -656,9 +517,10 @@ int bfoverlay_test_descriptor_file_read_file_io_handle(
 
 	/* Test regular cases
 	 */
-	result = libbfoverlay_descriptor_file_read_file_io_handle(
-	          descriptor_file,
+	result = libbfoverlay_cow_file_header_read_file_io_handle(
+	          cow_file_header,
 	          file_io_handle,
+	          0,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -672,9 +534,10 @@ int bfoverlay_test_descriptor_file_read_file_io_handle(
 
 	/* Test error cases
 	 */
-	result = libbfoverlay_descriptor_file_read_file_io_handle(
+	result = libbfoverlay_cow_file_header_read_file_io_handle(
 	          NULL,
 	          file_io_handle,
+	          0,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -689,9 +552,10 @@ int bfoverlay_test_descriptor_file_read_file_io_handle(
 	libcerror_error_free(
 	 &error );
 
-	result = libbfoverlay_descriptor_file_read_file_io_handle(
-	          descriptor_file,
+	result = libbfoverlay_cow_file_header_read_file_io_handle(
+	          cow_file_header,
 	          NULL,
+	          0,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -725,7 +589,7 @@ int bfoverlay_test_descriptor_file_read_file_io_handle(
 	 */
 	result = bfoverlay_test_open_file_io_handle(
 	          &file_io_handle,
-	          bfoverlay_test_descriptor_file_data1,
+	          bfoverlay_test_cow_file_header_data1,
 	          8,
 	          &error );
 
@@ -742,9 +606,10 @@ int bfoverlay_test_descriptor_file_read_file_io_handle(
 	 "error",
 	 error );
 
-	result = libbfoverlay_descriptor_file_read_file_io_handle(
-	          descriptor_file,
+	result = libbfoverlay_cow_file_header_read_file_io_handle(
+	          cow_file_header,
 	          file_io_handle,
+	          0,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -774,12 +639,64 @@ int bfoverlay_test_descriptor_file_read_file_io_handle(
 
 	/* Test data invalid
 	 */
-/* TODO implement */
+	result = bfoverlay_test_open_file_io_handle(
+	          &file_io_handle,
+	          bfoverlay_test_cow_file_header_data1,
+	          64,
+	          &error );
+
+	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
+	 "result",
+	 result,
+	 1 );
+
+	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
+	 "file_io_handle",
+	 file_io_handle );
+
+	BFOVERLAY_TEST_ASSERT_IS_NULL(
+	 "error",
+	 error );
+
+	bfoverlay_test_cow_file_header_data1[ 0 ] = '!';
+
+	result = libbfoverlay_cow_file_header_read_file_io_handle(
+	          cow_file_header,
+	          file_io_handle,
+	          0,
+	          &error );
+
+	bfoverlay_test_cow_file_header_data1[ 0 ] = '#';
+
+	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
+	 "result",
+	 result,
+	 -1 );
+
+	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
+	 "error",
+	 error );
+
+	libcerror_error_free(
+	 &error );
+
+	result = bfoverlay_test_close_file_io_handle(
+	          &file_io_handle,
+	          &error );
+
+	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
+	 "result",
+	 result,
+	 0 );
+
+	BFOVERLAY_TEST_ASSERT_IS_NULL(
+	 "error",
+	 error );
 
 	/* Clean up
 	 */
-	result = libbfoverlay_descriptor_file_free(
-	          &descriptor_file,
+	result = libbfoverlay_cow_file_header_free(
+	          &cow_file_header,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -788,8 +705,8 @@ int bfoverlay_test_descriptor_file_read_file_io_handle(
 	 1 );
 
 	BFOVERLAY_TEST_ASSERT_IS_NULL(
-	 "descriptor_file",
-	 descriptor_file );
+	 "cow_file_header",
+	 cow_file_header );
 
 	BFOVERLAY_TEST_ASSERT_IS_NULL(
 	 "error",
@@ -809,10 +726,10 @@ on_error:
 		 &file_io_handle,
 		 NULL );
 	}
-	if( descriptor_file != NULL )
+	if( cow_file_header != NULL )
 	{
-		libbfoverlay_descriptor_file_free(
-		 &descriptor_file,
+		libbfoverlay_cow_file_header_free(
+		 &cow_file_header,
 		 NULL );
 	}
 	return( 0 );
@@ -838,24 +755,22 @@ int main(
 #if defined( __GNUC__ ) && !defined( LIBBFOVERLAY_DLL_IMPORT )
 
 	BFOVERLAY_TEST_RUN(
-	 "libbfoverlay_descriptor_file_initialize",
-	 bfoverlay_test_descriptor_file_initialize );
+	 "libbfoverlay_cow_file_header_initialize",
+	 bfoverlay_test_cow_file_header_initialize );
 
 	BFOVERLAY_TEST_RUN(
-	 "libbfoverlay_descriptor_file_free",
-	 bfoverlay_test_descriptor_file_free );
+	 "libbfoverlay_cow_file_header_free",
+	 bfoverlay_test_cow_file_header_free );
 
 	BFOVERLAY_TEST_RUN(
-	 "libbfoverlay_descriptor_file_read_data",
-	 bfoverlay_test_descriptor_file_read_data );
+	 "libbfoverlay_cow_file_header_read_data",
+	 bfoverlay_test_cow_file_header_read_data );
 
 	BFOVERLAY_TEST_RUN(
-	 "libbfoverlay_descriptor_file_read_file_io_handle",
-	 bfoverlay_test_descriptor_file_read_file_io_handle );
+	 "libbfoverlay_cow_file_header_read_file_io_handle",
+	 bfoverlay_test_cow_file_header_read_file_io_handle );
 
-	/* TODO add tests for libbfoverlay_descriptor_get_number_of_layers */
-
-	/* TODO add tests for libbfoverlay_descriptor_get_layer_by_index */
+	/* TODO add tests for libbfoverlay_cow_file_header_write_file_io_handle */
 
 #endif /* defined( __GNUC__ ) && !defined( LIBBFOVERLAY_DLL_IMPORT ) */
 

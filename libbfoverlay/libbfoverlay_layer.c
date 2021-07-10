@@ -23,6 +23,7 @@
 #include <memory.h>
 #include <types.h>
 
+#include "libbfoverlay_definitions.h"
 #include "libbfoverlay_layer.h"
 #include "libbfoverlay_libcerror.h"
 
@@ -124,10 +125,15 @@ int libbfoverlay_layer_free(
 	}
 	if( *layer != NULL )
 	{
-		if( ( *layer )->file_path != NULL )
+		if( ( *layer )->cow_file_path != NULL )
 		{
 			memory_free(
-			 ( *layer )->file_path );
+			 ( *layer )->cow_file_path );
+		}
+		if( ( *layer )->data_file_path != NULL )
+		{
+			memory_free(
+			 ( *layer )->data_file_path );
 		}
 		memory_free(
 		 *layer );
@@ -137,16 +143,16 @@ int libbfoverlay_layer_free(
 	return( 1 );
 }
 
-/* Sets the file path
+/* Sets the copy-on-write (COW) file path
  * Returns 1 if successful or -1 on error
  */
-int libbfoverlay_layer_set_file_path(
+int libbfoverlay_layer_set_cow_file_path(
      libbfoverlay_layer_t *layer,
-     const uint8_t *file_path,
-     size_t file_path_size,
+     const uint8_t *path,
+     size_t path_size,
      libcerror_error_t **error )
 {
-	static char *function = "libbfoverlay_layer_set_file_path";
+	static char *function = "libbfoverlay_layer_set_cow_file_path";
 
 	if( layer == NULL )
 	{
@@ -159,83 +165,186 @@ int libbfoverlay_layer_set_file_path(
 
 		return( -1 );
 	}
-	if( layer->file_path != NULL )
+	if( layer->cow_file_path != NULL )
 	{
 		libcerror_error_set(
 		 error,
 		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
 		 LIBCERROR_RUNTIME_ERROR_VALUE_ALREADY_SET,
-		 "%s: invalid layer - file path value already set.",
+		 "%s: invalid layer - COW file path value already set.",
 		 function );
 
 		return( -1 );
 	}
-	if( file_path == NULL )
+	if( path == NULL )
 	{
 		libcerror_error_set(
 		 error,
 		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
 		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
-		 "%s: invalid file path.",
+		 "%s: invalid path.",
 		 function );
 
 		return( -1 );
 	}
-	if( ( file_path_size == 0 )
-	 || ( file_path_size > ( 32 * 1024 ) ) )
+	if( ( path_size == 0 )
+	 || ( path_size > LIBBFOVERLAY_MAXIMUM_PATH_SIZE ) )
 	{
 		libcerror_error_set(
 		 error,
 		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
 		 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
-		 "%s: invalid file path size value out of bounds.",
+		 "%s: invalid path size value out of bounds.",
 		 function );
 
 		goto on_error;
 	}
-	layer->file_path = (uint8_t *) memory_allocate(
-	                                sizeof( uint8_t ) * file_path_size );
+	layer->cow_file_path = (uint8_t *) memory_allocate(
+	                                    sizeof( uint8_t ) * path_size );
 
-	if( layer->file_path == NULL )
+	if( layer->cow_file_path == NULL )
 	{
 		libcerror_error_set(
 		 error,
 		 LIBCERROR_ERROR_DOMAIN_MEMORY,
 		 LIBCERROR_MEMORY_ERROR_INSUFFICIENT,
-		 "%s: unable to create file path.",
+		 "%s: unable to create cow file path.",
 		 function );
 
 		goto on_error;
 	}
 	if( memory_copy(
-	     layer->file_path,
-	     file_path,
-	     file_path_size - 1 ) == NULL )
+	     layer->cow_file_path,
+	     path,
+	     path_size - 1 ) == NULL )
 	{
 		libcerror_error_set(
 		 error,
 		 LIBCERROR_ERROR_DOMAIN_MEMORY,
 		 LIBCERROR_MEMORY_ERROR_COPY_FAILED,
-		 "%s: unable to copy file path.",
+		 "%s: unable to copy path.",
 		 function );
 
 		goto on_error;
 	}
-	layer->file_path[ file_path_size - 1 ] = 0;
+	layer->cow_file_path[ path_size - 1 ] = 0;
 
-	layer->file_path_size = file_path_size;
+	layer->cow_file_path_size = path_size;
 
 	return( 1 );
 
 on_error:
-	if( layer->file_path != NULL )
+	if( layer->cow_file_path != NULL )
 	{
 		memory_free(
-		 layer->file_path );
+		 layer->cow_file_path );
 
-		layer->file_path = NULL;
+		layer->cow_file_path = NULL;
 	}
-	layer->file_path_size = 0;
+	layer->cow_file_path_size = 0;
+
+	return( -1 );
+}
+
+/* Sets the data file path
+ * Returns 1 if successful or -1 on error
+ */
+int libbfoverlay_layer_set_data_file_path(
+     libbfoverlay_layer_t *layer,
+     const uint8_t *path,
+     size_t path_size,
+     libcerror_error_t **error )
+{
+	static char *function = "libbfoverlay_layer_set_data_file_path";
+
+	if( layer == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
+		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
+		 "%s: invalid layer.",
+		 function );
+
+		return( -1 );
+	}
+	if( layer->data_file_path != NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_ALREADY_SET,
+		 "%s: invalid layer - data file path value already set.",
+		 function );
+
+		return( -1 );
+	}
+	if( path == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
+		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
+		 "%s: invalid path.",
+		 function );
+
+		return( -1 );
+	}
+	if( ( path_size == 0 )
+	 || ( path_size > LIBBFOVERLAY_MAXIMUM_PATH_SIZE ) )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+		 "%s: invalid path size value out of bounds.",
+		 function );
+
+		goto on_error;
+	}
+	layer->data_file_path = (uint8_t *) memory_allocate(
+	                                     sizeof( uint8_t ) * path_size );
+
+	if( layer->data_file_path == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_MEMORY,
+		 LIBCERROR_MEMORY_ERROR_INSUFFICIENT,
+		 "%s: unable to create data file path.",
+		 function );
+
+		goto on_error;
+	}
+	if( memory_copy(
+	     layer->data_file_path,
+	     path,
+	     path_size - 1 ) == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_MEMORY,
+		 LIBCERROR_MEMORY_ERROR_COPY_FAILED,
+		 "%s: unable to copy path.",
+		 function );
+
+		goto on_error;
+	}
+	layer->data_file_path[ path_size - 1 ] = 0;
+
+	layer->data_file_path_size = path_size;
+
+	return( 1 );
+
+on_error:
+	if( layer->data_file_path != NULL )
+	{
+		memory_free(
+		 layer->data_file_path );
+
+		layer->data_file_path = NULL;
+	}
+	layer->data_file_path_size = 0;
 
 	return( -1 );
 }

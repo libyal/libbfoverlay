@@ -31,6 +31,9 @@ EXTRA_DIST = \
 	$(check_SCRIPTS)
 
 check_PROGRAMS = \
+	bfoverlay_test_cow_allocation_table \
+	bfoverlay_test_cow_file \
+	bfoverlay_test_cow_file_header \
 	bfoverlay_test_descriptor_file \
 	bfoverlay_test_error \
 	bfoverlay_test_handle \
@@ -40,6 +43,72 @@ check_PROGRAMS = \
 	bfoverlay_test_support \
 	bfoverlay_test_tools_output \
 	bfoverlay_test_tools_signal
+
+bfoverlay_test_cow_allocation_table_SOURCES = \
+	bfoverlay_test_cow_allocation_table.c \
+	bfoverlay_test_functions.c bfoverlay_test_functions.h \
+	bfoverlay_test_libbfio.h \
+	bfoverlay_test_libcerror.h \
+	bfoverlay_test_libbfoverlay.h \
+	bfoverlay_test_macros.h \
+	bfoverlay_test_memory.c bfoverlay_test_memory.h \
+	bfoverlay_test_unused.h
+
+bfoverlay_test_cow_allocation_table_LDADD = \
+	@LIBBFIO_LIBADD@ \
+	@LIBCPATH_LIBADD@ \
+	@LIBCFILE_LIBADD@ \
+	@LIBUNA_LIBADD@ \
+	@LIBCSPLIT_LIBADD@ \
+	@LIBCNOTIFY_LIBADD@ \
+	@LIBCLOCALE_LIBADD@ \
+	@LIBCDATA_LIBADD@ \
+	../libbfoverlay/libbfoverlay.la \
+	@LIBCERROR_LIBADD@
+
+bfoverlay_test_cow_file_SOURCES = \
+	bfoverlay_test_cow_file.c \
+	bfoverlay_test_functions.c bfoverlay_test_functions.h \
+	bfoverlay_test_libbfio.h \
+	bfoverlay_test_libbfoverlay.h \
+	bfoverlay_test_libcerror.h \
+	bfoverlay_test_macros.h \
+	bfoverlay_test_memory.c bfoverlay_test_memory.h \
+	bfoverlay_test_unused.h
+
+bfoverlay_test_cow_file_LDADD = \
+	@LIBBFIO_LIBADD@ \
+	@LIBCPATH_LIBADD@ \
+	@LIBCFILE_LIBADD@ \
+	@LIBUNA_LIBADD@ \
+	@LIBCSPLIT_LIBADD@ \
+	@LIBCNOTIFY_LIBADD@ \
+	@LIBCLOCALE_LIBADD@ \
+	@LIBCDATA_LIBADD@ \
+	../libbfoverlay/libbfoverlay.la \
+	@LIBCERROR_LIBADD@
+
+bfoverlay_test_cow_file_header_SOURCES = \
+	bfoverlay_test_cow_file_header.c \
+	bfoverlay_test_functions.c bfoverlay_test_functions.h \
+	bfoverlay_test_libbfio.h \
+	bfoverlay_test_libcerror.h \
+	bfoverlay_test_libbfoverlay.h \
+	bfoverlay_test_macros.h \
+	bfoverlay_test_memory.c bfoverlay_test_memory.h \
+	bfoverlay_test_unused.h
+
+bfoverlay_test_cow_file_header_LDADD = \
+	@LIBBFIO_LIBADD@ \
+	@LIBCPATH_LIBADD@ \
+	@LIBCFILE_LIBADD@ \
+	@LIBUNA_LIBADD@ \
+	@LIBCSPLIT_LIBADD@ \
+	@LIBCNOTIFY_LIBADD@ \
+	@LIBCLOCALE_LIBADD@ \
+	@LIBCDATA_LIBADD@ \
+	../libbfoverlay/libbfoverlay.la \
+	@LIBCERROR_LIBADD@
 
 bfoverlay_test_descriptor_file_SOURCES = \
 	bfoverlay_test_descriptor_file.c \

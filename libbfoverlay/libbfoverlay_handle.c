@@ -831,20 +831,20 @@ int libbfoverlay_internal_handle_open_data_files(
 
 			goto on_error;
 		}
-		if( ( layer->file_path != NULL )
-		 && ( layer->file_path_size > 0 ) )
+		if( ( layer->data_file_path != NULL )
+		 && ( layer->data_file_path_size > 0 ) )
 		{
 #if defined( HAVE_WIDE_SYSTEM_CHARACTER )
 #if SIZEOF_WCHAR_T == 4
 			result = libuna_utf32_string_size_from_utf8(
-			          (libuna_utf8_character_t *) layer->file_path,
-			          layer->file_path_size,
+			          (libuna_utf8_character_t *) layer->data_file_path,
+			          layer->data_file_path_size,
 			          &wide_file_path_size,
 			          error );
 #elif SIZEOF_WCHAR_T == 2
 			result = libuna_utf16_string_size_from_utf8(
-			          (libuna_utf8_character_t *) layer->file_path,
-			          layer->file_path_size,
+			          (libuna_utf8_character_t *) layer->data_file_path,
+			          layer->data_file_path_size,
 			          &wide_file_path_size,
 			          error );
 #else
@@ -856,7 +856,7 @@ int libbfoverlay_internal_handle_open_data_files(
 				 error,
 				 LIBCERROR_ERROR_DOMAIN_CONVERSION,
 				 LIBCERROR_CONVERSION_ERROR_GENERIC,
-				 "%s: unable to determine wide file path size.",
+				 "%s: unable to determine wide data file path size.",
 				 function );
 
 				goto on_error;
@@ -868,7 +868,7 @@ int libbfoverlay_internal_handle_open_data_files(
 				 error,
 				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
 				 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
-				 "%s: invalid wide file path size value out of bounds.",
+				 "%s: invalid wide data file path size value out of bounds.",
 				 function );
 
 				goto on_error;
@@ -882,7 +882,7 @@ int libbfoverlay_internal_handle_open_data_files(
 				 error,
 				 LIBCERROR_ERROR_DOMAIN_MEMORY,
 				 LIBCERROR_MEMORY_ERROR_INSUFFICIENT,
-				 "%s: unable to create wide file path.",
+				 "%s: unable to create wide data file path.",
 				 function );
 
 				goto on_error;
@@ -891,15 +891,15 @@ int libbfoverlay_internal_handle_open_data_files(
 			result = libuna_utf32_string_copy_from_utf8(
 			          wide_file_path,
 			          wide_file_path_size,
-			          (libuna_utf8_character_t *) layer->file_path,
-			          layer->file_path_size,
+			          (libuna_utf8_character_t *) layer->data_file_path,
+			          layer->data_file_path_size,
 			          error );
 #elif SIZEOF_WCHAR_T == 2
 			result = libuna_utf16_string_copy_from_utf8(
 			          wide_file_path,
 			          wide_file_path_size,
-			          (libuna_utf8_character_t *) layer->file_path,
-			          layer->file_path_size,
+			          (libuna_utf8_character_t *) layer->data_file_path,
+			          layer->data_file_path_size,
 			          error );
 #else
 #error Unsupported size of wchar_t
@@ -910,7 +910,7 @@ int libbfoverlay_internal_handle_open_data_files(
 				 error,
 				 LIBCERROR_ERROR_DOMAIN_CONVERSION,
 				 LIBCERROR_CONVERSION_ERROR_GENERIC,
-				 "%s: unable to determine wide file path size.",
+				 "%s: unable to determine wide data file path size.",
 				 function );
 
 				goto on_error;
@@ -925,7 +925,7 @@ int libbfoverlay_internal_handle_open_data_files(
 			if( libbfio_file_pool_open(
 			     file_io_pool,
 			     layer_index,
-			     (char *) layer->file_path,
+			     (char *) layer->data_file_path,
 			     LIBBFIO_OPEN_READ,
 			     error ) != 1 )
 #endif
@@ -1078,7 +1078,7 @@ int libbfoverlay_internal_handle_open_data_files(
 					goto on_error;
 				}
 			}
-			if( ( layer->size > internal_handle->size )
+			if( ( (size64_t) layer->size > internal_handle->size )
 			 || ( layer->offset > (off64_t) ( internal_handle->size - layer->size ) ) )
 			{
 				libcerror_error_set(
@@ -1673,7 +1673,7 @@ int libbfoverlay_internal_handle_open_determine_ranges(
 		remaining_layer_size     = layer->size;
 		current_data_file_offset = layer->file_offset;
 
-		range_flags = ( layer->file_path == NULL );
+		range_flags = ( layer->data_file_path == NULL );
 
 #if defined( HAVE_DEBUG_OUTPUT )
 		if( libcnotify_verbose != 0 )
