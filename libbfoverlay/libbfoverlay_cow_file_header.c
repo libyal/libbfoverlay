@@ -268,15 +268,16 @@ int libbfoverlay_cow_file_header_read_data(
 /* Reads the COW file header
  * Returns 1 if successful or -1 on error
  */
-int libbfoverlay_cow_file_header_read_file_io_handle(
+int libbfoverlay_cow_file_header_read_file_io_pool(
      libbfoverlay_cow_file_header_t *cow_file_header,
-     libbfio_handle_t *file_io_handle,
+     libbfio_pool_t *file_io_pool,
+     int file_io_pool_entry,
      off64_t file_offset,
      libcerror_error_t **error )
 {
 	uint8_t cow_file_header_data[ sizeof( bfoverlay_cow_file_header_t ) ];
 
-	static char *function = "libbfoverlay_cow_file_header_read_file_io_handle";
+	static char *function = "libbfoverlay_cow_file_header_read_file_io_pool";
 	ssize_t read_count    = 0;
 
 	if( cow_file_header == NULL )
@@ -300,11 +301,12 @@ int libbfoverlay_cow_file_header_read_file_io_handle(
 		 file_offset );
 	}
 #endif
-	read_count = libbfio_handle_read_buffer_at_offset(
-	              file_io_handle,
+	read_count = libbfio_pool_read_buffer_at_offset(
+	              file_io_pool,
+	              file_io_pool_entry,
 	              cow_file_header_data,
 	              sizeof( bfoverlay_cow_file_header_t ),
-	              0,
+	              file_offset,
 	              error );
 
 	if( read_count != (ssize_t) sizeof( bfoverlay_cow_file_header_t ) )
@@ -341,15 +343,16 @@ int libbfoverlay_cow_file_header_read_file_io_handle(
 /* Writes the COW file header
  * Returns 1 if successful or -1 on error
  */
-int libbfoverlay_cow_file_header_write_file_io_handle(
+int libbfoverlay_cow_file_header_write_file_io_pool(
      libbfoverlay_cow_file_header_t *cow_file_header,
-     libbfio_handle_t *file_io_handle,
+     libbfio_pool_t *file_io_pool,
+     int file_io_pool_entry,
      off64_t file_offset,
      libcerror_error_t **error )
 {
 	uint8_t cow_file_header_data[ sizeof( bfoverlay_cow_file_header_t ) ];
 
-	static char *function = "libbfoverlay_cow_file_header_write_file_io_handle";
+	static char *function = "libbfoverlay_cow_file_header_write_file_io_pool";
 	ssize_t write_count   = 0;
 
 	if( cow_file_header == NULL )
@@ -416,11 +419,12 @@ int libbfoverlay_cow_file_header_write_file_io_handle(
 		 file_offset );
 	}
 #endif
-	write_count = libbfio_handle_write_buffer_at_offset(
-	              file_io_handle,
+	write_count = libbfio_pool_write_buffer_at_offset(
+	              file_io_pool,
+	              file_io_pool_entry,
 	              cow_file_header_data,
 	              sizeof( bfoverlay_cow_file_header_t ),
-	              0,
+	              file_offset,
 	              error );
 
 	if( write_count != (ssize_t) sizeof( bfoverlay_cow_file_header_t ) )

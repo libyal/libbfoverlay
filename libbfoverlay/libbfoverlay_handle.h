@@ -25,12 +25,14 @@
 #include <common.h>
 #include <types.h>
 
+#include "libbfoverlay_cow_file.h"
 #include "libbfoverlay_descriptor_file.h"
 #include "libbfoverlay_extern.h"
 #include "libbfoverlay_libbfio.h"
 #include "libbfoverlay_libcdata.h"
 #include "libbfoverlay_libcerror.h"
 #include "libbfoverlay_libcthreads.h"
+#include "libbfoverlay_range.h"
 #include "libbfoverlay_types.h"
 
 #if defined( __cplusplus )
@@ -44,6 +46,18 @@ struct libbfoverlay_internal_handle
 	/* The descriptor file
 	 */
 	libbfoverlay_descriptor_file_t *descriptor_file;
+
+	/* The copy-on-write (COW) file
+	 */
+	libbfoverlay_cow_file_t *cow_file;
+
+	/* The copy-on-write (COW) file IO pool entry
+	 */
+	int cow_file_io_pool_entry;
+
+	/* The copy-on-write (COW) block data
+	 */
+	uint8_t *cow_block_data;
 
 	/* The ranges array
 	 */
@@ -80,6 +94,10 @@ struct libbfoverlay_internal_handle
 	/* The size
 	 */
 	size64_t size;
+
+	/* The access flags
+	 */
+	int access_flags;
 
 	/* Value to indicate if abort was signalled
 	 */
@@ -167,6 +185,13 @@ int libbfoverlay_internal_handle_open_determine_ranges(
      libbfoverlay_internal_handle_t *internal_handle,
      libcerror_error_t **error );
 
+int libbfoverlay_internal_handle_get_range_at_offset(
+     libbfoverlay_internal_handle_t *internal_handle,
+     off64_t offset,
+     int *range_index,
+     libbfoverlay_range_t **range,
+     libcerror_error_t **error );
+
 LIBBFOVERLAY_EXTERN \
 ssize_t libbfoverlay_handle_read_buffer(
          libbfoverlay_handle_t *handle,
@@ -182,7 +207,6 @@ ssize_t libbfoverlay_handle_read_buffer_at_offset(
          off64_t offset,
          libcerror_error_t **error );
 
-#ifdef TODO
 ssize_t libbfoverlay_internal_handle_write_buffer(
          libbfoverlay_internal_handle_t *internal_handle,
          const uint8_t *buffer,
@@ -193,7 +217,7 @@ LIBBFOVERLAY_EXTERN \
 ssize_t libbfoverlay_handle_write_buffer(
          libbfoverlay_handle_t *handle,
          const uint8_t *buffer,
-         size_t size,
+         size_t buffer_size,
          libcerror_error_t **error );
 
 LIBBFOVERLAY_EXTERN \
@@ -203,7 +227,6 @@ ssize_t libbfoverlay_handle_write_buffer_at_offset(
          size_t buffer_size,
          off64_t offset,
          libcerror_error_t **error );
-#endif /* TODO */
 
 off64_t libbfoverlay_internal_handle_seek_offset(
          libbfoverlay_internal_handle_t *internal_handle,

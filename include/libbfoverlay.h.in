@@ -256,6 +256,27 @@ ssize_t libbfoverlay_handle_read_buffer_at_offset(
          off64_t offset,
          libbfoverlay_error_t **error );
 
+/* Writes data from buffer at the current offset
+ * Returns the number of bytes written if successful, or -1 on error
+ */
+LIBBFOVERLAY_EXTERN \
+ssize_t libbfoverlay_handle_write_buffer(
+         libbfoverlay_handle_t *handle,
+         const uint8_t *buffer,
+         size_t size,
+         libbfoverlay_error_t **error );
+
+/* Writes data at a specific offset
+ * Returns the number of bytes written or -1 on error
+ */
+LIBBFOVERLAY_EXTERN \
+ssize_t libbfoverlay_handle_write_buffer_at_offset(
+         libbfoverlay_handle_t *handle,
+         const uint8_t *buffer,
+         size_t buffer_size,
+         off64_t offset,
+         libbfoverlay_error_t **error );
+
 /* Seeks a specific offset
  * Returns the offset if the seek is successful or -1 on error
  */

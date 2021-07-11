@@ -441,6 +441,8 @@ on_error:
 	return( 0 );
 }
 
+#ifdef TODO
+
 /* Tests the libbfoverlay_cow_allocation_table_read_file_io_handle function
  * Returns 1 if successful or 0 if not
  */
@@ -656,6 +658,7 @@ on_error:
 	}
 	return( 0 );
 }
+#endif /* TODO */
 
 #endif /* defined( __GNUC__ ) && !defined( LIBBFOVERLAY_DLL_IMPORT ) */
 
@@ -688,9 +691,11 @@ int main(
 	 "libbfoverlay_cow_allocation_table_read_data",
 	 bfoverlay_test_cow_allocation_table_read_data );
 
+#ifdef TODO
 	BFOVERLAY_TEST_RUN(
 	 "libbfoverlay_cow_allocation_table_read_file_io_handle",
 	 bfoverlay_test_cow_allocation_table_read_file_io_handle );
+#endif
 
 	/* TODO add tests for libbfoverlay_cow_allocation_table_write_file_io_handle */
 

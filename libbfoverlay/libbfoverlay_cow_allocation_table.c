@@ -38,7 +38,8 @@ int libbfoverlay_cow_allocation_table_initialize(
      uint64_t number_of_blocks,
      libcerror_error_t **error )
 {
-	static char *function = "libbfoverlay_cow_allocation_table_initialize";
+	static char *function   = "libbfoverlay_cow_allocation_table_initialize";
+	size_t block_table_size = 0;
 
 	if( cow_allocation_table == NULL )
 	{
@@ -58,6 +59,18 @@ int libbfoverlay_cow_allocation_table_initialize(
 		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
 		 LIBCERROR_RUNTIME_ERROR_VALUE_ALREADY_SET,
 		 "%s: invalid COW allocation table value already set.",
+		 function );
+
+		return( -1 );
+	}
+	if( ( number_of_blocks == 0 )
+	 || ( number_of_blocks > ( (uint64_t) MEMORY_MAXIMUM_ALLOCATION_SIZE / 8 ) ) )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+		 "%s: invalid number of blocks value exceed maximum allocation size.",
 		 function );
 
 		return( -1 );
@@ -90,6 +103,36 @@ int libbfoverlay_cow_allocation_table_initialize(
 
 		goto on_error;
 	}
+	block_table_size = (size_t) number_of_blocks * sizeof( uint64_t );
+
+	( *cow_allocation_table )->block_table = (uint64_t *) memory_allocate(
+	                                                       block_table_size );
+
+	if( ( *cow_allocation_table )->block_table == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_MEMORY,
+		 LIBCERROR_MEMORY_ERROR_INSUFFICIENT,
+		 "%s: unable to create block table.",
+		 function );
+
+		goto on_error;
+	}
+	if( memory_set(
+	     ( *cow_allocation_table )->block_table,
+	     0,
+	     block_table_size ) == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_MEMORY,
+		 LIBCERROR_MEMORY_ERROR_SET_FAILED,
+		 "%s: unable to clear block table.",
+		 function );
+
+		goto on_error;
+	}
 	( *cow_allocation_table )->number_of_blocks = number_of_blocks;
 
 	return( 1 );
@@ -97,6 +140,11 @@ int libbfoverlay_cow_allocation_table_initialize(
 on_error:
 	if( *cow_allocation_table != NULL )
 	{
+		if( ( *cow_allocation_table )->block_table != NULL )
+		{
+			memory_free(
+			 ( *cow_allocation_table )->block_table );
+		}
 		memory_free(
 		 *cow_allocation_table );
 
@@ -128,6 +176,9 @@ int libbfoverlay_cow_allocation_table_free(
 	if( *cow_allocation_table != NULL )
 	{
 		memory_free(
+		 ( *cow_allocation_table )->block_table );
+
+		memory_free(
 		 *cow_allocation_table );
 
 		*cow_allocation_table = NULL;
@@ -145,6 +196,8 @@ int libbfoverlay_cow_allocation_table_read_data(
      libcerror_error_t **error )
 {
 	static char *function = "libbfoverlay_cow_allocation_table_read_data";
+	size_t data_offset    = 0;
+	uint64_t block_number = 0;
 
 	if( cow_allocation_table == NULL )
 	{
@@ -153,6 +206,17 @@ int libbfoverlay_cow_allocation_table_read_data(
 		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
 		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
 		 "%s: invalid COW allocation table.",
+		 function );
+
+		return( -1 );
+	}
+	if( cow_allocation_table->block_table == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
+		 "%s: invalid COW allocation table - missing block table.",
 		 function );
 
 		return( -1 );
@@ -192,23 +256,32 @@ int libbfoverlay_cow_allocation_table_read_data(
 		 0 );
 	}
 #endif
-/* TODO implement */
+	for( block_number = 0;
+	     block_number < cow_allocation_table->number_of_blocks;
+	     block_number++ )
+	{
+		byte_stream_copy_to_uint64_big_endian(
+		 &( data[ data_offset ] ),
+		 ( cow_allocation_table->block_table )[ block_number ] );
 
+		data_offset += 8;
+	}
 	return( 1 );
 }
 
 /* Reads the COW allocation table
  * Returns 1 if successful or -1 on error
  */
-int libbfoverlay_cow_allocation_table_read_file_io_handle(
+int libbfoverlay_cow_allocation_table_read_file_io_pool(
      libbfoverlay_cow_allocation_table_t *cow_allocation_table,
-     libbfio_handle_t *file_io_handle,
+     libbfio_pool_t *file_io_pool,
+     int file_io_pool_entry,
      off64_t file_offset,
      libcerror_error_t **error )
 {
 	uint8_t *cow_allocation_table_data    = NULL;
 	static char *function                 = "libbfoverlay_cow_allocation_table_read_file_io_handle";
-	size_t cow_allocation_table_data_size = 0; 
+	size_t cow_allocation_table_data_size = 0;
 	ssize_t read_count                    = 0;
 
 	if( cow_allocation_table == NULL )
@@ -274,11 +347,12 @@ int libbfoverlay_cow_allocation_table_read_file_io_handle(
 		 file_offset );
 	}
 #endif
-	read_count = libbfio_handle_read_buffer_at_offset(
-	              file_io_handle,
+	read_count = libbfio_pool_read_buffer_at_offset(
+	              file_io_pool,
+	              file_io_pool_entry,
 	              cow_allocation_table_data,
 	              cow_allocation_table_data_size,
-	              0,
+	              file_offset,
 	              error );
 
 	if( read_count != (ssize_t) cow_allocation_table_data_size )
@@ -326,16 +400,19 @@ on_error:
 /* Writes the COW allocation table
  * Returns 1 if successful or -1 on error
  */
-int libbfoverlay_cow_allocation_table_write_file_io_handle(
+int libbfoverlay_cow_allocation_table_write_file_io_pool(
      libbfoverlay_cow_allocation_table_t *cow_allocation_table,
-     libbfio_handle_t *file_io_handle,
+     libbfio_pool_t *file_io_pool,
+     int file_io_pool_entry,
      off64_t file_offset,
      libcerror_error_t **error )
 {
 	uint8_t *cow_allocation_table_data    = NULL;
 	static char *function                 = "libbfoverlay_cow_allocation_table_write_file_io_handle";
-	size_t cow_allocation_table_data_size = 0; 
+	size_t cow_allocation_table_data_size = 0;
+	size_t data_offset                    = 0;
 	ssize_t write_count                   = 0;
+	uint64_t block_number                 = 0;
 
 	if( cow_allocation_table == NULL )
 	{
@@ -376,19 +453,15 @@ int libbfoverlay_cow_allocation_table_write_file_io_handle(
 
 		goto on_error;
 	}
-	if( memory_set(
-	     cow_allocation_table_data,
-	     0,
-	     cow_allocation_table_data_size ) == NULL )
+	for( block_number = 0;
+	     block_number < cow_allocation_table->number_of_blocks;
+	     block_number++ )
 	{
-		libcerror_error_set(
-		 error,
-		 LIBCERROR_ERROR_DOMAIN_MEMORY,
-		 LIBCERROR_MEMORY_ERROR_SET_FAILED,
-		 "%s: unable to clear COW allocation table data.",
-		 function );
+		byte_stream_copy_from_uint64_big_endian(
+		 &( cow_allocation_table_data[ data_offset ] ),
+		 ( cow_allocation_table->block_table )[ block_number ] );
 
-		goto on_error;
+		data_offset += 8;
 	}
 #if defined( HAVE_DEBUG_OUTPUT )
 	if( libcnotify_verbose != 0 )
@@ -400,11 +473,12 @@ int libbfoverlay_cow_allocation_table_write_file_io_handle(
 		 file_offset );
 	}
 #endif
-	write_count = libbfio_handle_write_buffer_at_offset(
-	              file_io_handle,
+	write_count = libbfio_pool_write_buffer_at_offset(
+	              file_io_pool,
+	              file_io_pool_entry,
 	              cow_allocation_table_data,
 	              cow_allocation_table_data_size,
-	              0,
+	              file_offset,
 	              error );
 
 	if( write_count != (ssize_t) cow_allocation_table_data_size )
@@ -433,3 +507,115 @@ on_error:
 	}
 	return( -1 );
 }
+
+/* Retrieves a specific block number
+ * Returns 1 if successful or -1 on error
+ */
+int libbfoverlay_cow_allocation_table_get_block_number_by_index(
+     libbfoverlay_cow_allocation_table_t *cow_allocation_table,
+     int table_index,
+     uint64_t *block_number,
+     libcerror_error_t **error )
+{
+	static char *function = "libbfoverlay_cow_allocation_table_get_block_number_by_index";
+
+	if( cow_allocation_table == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
+		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
+		 "%s: invalid COW allocation table.",
+		 function );
+
+		return( -1 );
+	}
+	if( cow_allocation_table->block_table == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
+		 "%s: invalid COW allocation table - missing block table.",
+		 function );
+
+		return( -1 );
+	}
+	if( ( table_index < 0 )
+	 || ( (uint64_t) table_index >= cow_allocation_table->number_of_blocks ) )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+		 "%s: invalid table index value out of bounds.",
+		 function );
+
+		return( -1 );
+	}
+	if( block_number == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
+		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
+		 "%s: invalid block number.",
+		 function );
+
+		return( -1 );
+	}
+	*block_number = ( cow_allocation_table->block_table )[ table_index ];
+
+	return( 1 );
+}
+
+/* Sets a specific block number
+ * Returns 1 if successful or -1 on error
+ */
+int libbfoverlay_cow_allocation_table_set_block_number_by_index(
+     libbfoverlay_cow_allocation_table_t *cow_allocation_table,
+     int table_index,
+     uint64_t block_number,
+     libcerror_error_t **error )
+{
+	static char *function = "libbfoverlay_cow_allocation_table_set_block_number_by_index";
+
+	if( cow_allocation_table == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
+		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
+		 "%s: invalid COW allocation table.",
+		 function );
+
+		return( -1 );
+	}
+	if( cow_allocation_table->block_table == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
+		 "%s: invalid COW allocation table - missing block table.",
+		 function );
+
+		return( -1 );
+	}
+	if( ( table_index < 0 )
+	 || ( (uint64_t) table_index >= cow_allocation_table->number_of_blocks ) )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+		 "%s: invalid table index value out of bounds.",
+		 function );
+
+		return( -1 );
+	}
+	( cow_allocation_table->block_table )[ table_index ] = block_number;
+
+	return( 1 );
+}
+

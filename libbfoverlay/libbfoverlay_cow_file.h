@@ -25,6 +25,7 @@
 #include <common.h>
 #include <types.h>
 
+#include "libbfoverlay_cow_allocation_table.h"
 #include "libbfoverlay_libbfio.h"
 #include "libbfoverlay_libcerror.h"
 
@@ -39,6 +40,22 @@ struct libbfoverlay_cow_file
 	/* Data size
 	 */
 	size64_t data_size;
+
+	/* Block size
+	 */
+	size32_t block_size;
+
+	/* Allocation table
+	 */
+	libbfoverlay_cow_allocation_table_t *allocation_table;
+
+	/* First block number used to store data
+	 */
+	uint64_t first_data_block_number;
+
+	/* Last block number used to store data
+	 */
+	uint64_t last_data_block_number;
 };
 
 int libbfoverlay_cow_file_initialize(
@@ -50,13 +67,30 @@ int libbfoverlay_cow_file_free(
      libbfoverlay_cow_file_t **cow_file,
      libcerror_error_t **error );
 
-int libbfoverlay_cow_file_open_file_io_handle(
+int libbfoverlay_cow_file_open(
      libbfoverlay_cow_file_t *cow_file,
-     libbfio_handle_t *file_io_handle,
+     libbfio_pool_t *file_io_pool,
+     int file_io_pool_entry,
      libcerror_error_t **error );
 
 int libbfoverlay_cow_file_close(
      libbfoverlay_cow_file_t *cow_file,
+     libbfio_pool_t *file_io_pool,
+     int file_io_pool_entry,
+     libcerror_error_t **error );
+
+int libbfoverlay_cow_file_allocate_block_for_offset(
+     libbfoverlay_cow_file_t *cow_file,
+     off64_t offset,
+     off64_t *file_offset,
+     libcerror_error_t **error );
+
+int libbfoverlay_cow_file_get_block_at_offset(
+     libbfoverlay_cow_file_t *cow_file,
+     off64_t offset,
+     off64_t *range_start_offset,
+     off64_t *range_end_offset,
+     off64_t *file_offset,
      libcerror_error_t **error );
 
 #if defined( __cplusplus )

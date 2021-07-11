@@ -36,9 +36,13 @@ typedef struct libbfoverlay_cow_allocation_table libbfoverlay_cow_allocation_tab
 
 struct libbfoverlay_cow_allocation_table
 {
-	/* The number of blocks
+	/* Number of blocks
 	 */
 	uint64_t number_of_blocks;
+
+	/* Block table
+	 */
+	uint64_t *block_table;
 };
 
 int libbfoverlay_cow_allocation_table_initialize(
@@ -56,16 +60,30 @@ int libbfoverlay_cow_allocation_table_read_data(
      size_t data_size,
      libcerror_error_t **error );
 
-int libbfoverlay_cow_allocation_table_read_file_io_handle(
+int libbfoverlay_cow_allocation_table_read_file_io_pool(
      libbfoverlay_cow_allocation_table_t *cow_allocation_table,
-     libbfio_handle_t *file_io_handle,
+     libbfio_pool_t *file_io_pool,
+     int file_io_pool_entry,
      off64_t file_offset,
      libcerror_error_t **error );
 
-int libbfoverlay_cow_allocation_table_write_file_io_handle(
+int libbfoverlay_cow_allocation_table_write_file_io_pool(
      libbfoverlay_cow_allocation_table_t *cow_allocation_table,
-     libbfio_handle_t *file_io_handle,
+     libbfio_pool_t *file_io_pool,
+     int file_io_pool_entry,
      off64_t file_offset,
+     libcerror_error_t **error );
+
+int libbfoverlay_cow_allocation_table_get_block_number_by_index(
+     libbfoverlay_cow_allocation_table_t *cow_allocation_table,
+     int table_index,
+     uint64_t *block_number,
+     libcerror_error_t **error );
+
+int libbfoverlay_cow_allocation_table_set_block_number_by_index(
+     libbfoverlay_cow_allocation_table_t *cow_allocation_table,
+     int table_index,
+     uint64_t block_number,
      libcerror_error_t **error );
 
 #if defined( __cplusplus )

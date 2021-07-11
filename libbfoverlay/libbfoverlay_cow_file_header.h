@@ -63,15 +63,17 @@ int libbfoverlay_cow_file_header_read_data(
      size_t data_size,
      libcerror_error_t **error );
 
-int libbfoverlay_cow_file_header_read_file_io_handle(
+int libbfoverlay_cow_file_header_read_file_io_pool(
      libbfoverlay_cow_file_header_t *cow_file_header,
-     libbfio_handle_t *file_io_handle,
+     libbfio_pool_t *file_io_pool,
+     int file_io_pool_entry,
      off64_t file_offset,
      libcerror_error_t **error );
 
-int libbfoverlay_cow_file_header_write_file_io_handle(
+int libbfoverlay_cow_file_header_write_file_io_pool(
      libbfoverlay_cow_file_header_t *cow_file_header,
-     libbfio_handle_t *file_io_handle,
+     libbfio_pool_t *file_io_pool,
+     int file_io_pool_entry,
      off64_t file_offset,
      libcerror_error_t **error );
 

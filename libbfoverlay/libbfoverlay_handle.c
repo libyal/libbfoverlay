@@ -117,6 +117,7 @@ int libbfoverlay_handle_initialize(
 		goto on_error;
 	}
 #endif
+	internal_handle->cow_file_io_pool_entry         = -1;
 	internal_handle->maximum_number_of_open_handles = LIBBFIO_POOL_UNLIMITED_NUMBER_OF_OPEN_HANDLES;
 
 	*handle = (libbfoverlay_handle_t *) internal_handle;
@@ -270,17 +271,6 @@ int libbfoverlay_handle_open(
 		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
 		 LIBCERROR_ARGUMENT_ERROR_UNSUPPORTED_VALUE,
 		 "%s: unsupported access flags.",
-		 function );
-
-		return( -1 );
-	}
-	if( ( access_flags & LIBBFOVERLAY_ACCESS_FLAG_WRITE ) != 0 )
-	{
-		libcerror_error_set(
-		 error,
-		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
-		 LIBCERROR_ARGUMENT_ERROR_UNSUPPORTED_VALUE,
-		 "%s: write access currently not supported.",
 		 function );
 
 		return( -1 );
@@ -444,17 +434,6 @@ int libbfoverlay_handle_open_wide(
 
 		return( -1 );
 	}
-	if( ( access_flags & LIBBFOVERLAY_ACCESS_FLAG_WRITE ) != 0 )
-	{
-		libcerror_error_set(
-		 error,
-		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
-		 LIBCERROR_ARGUMENT_ERROR_UNSUPPORTED_VALUE,
-		 "%s: write access currently not supported.",
-		 function );
-
-		return( -1 );
-	}
 	internal_handle = (libbfoverlay_internal_handle_t *) handle;
 
 	if( libbfio_file_initialize(
@@ -580,7 +559,7 @@ int libbfoverlay_handle_open_file_io_handle(
 	int bfio_access_flags                           = 0;
 	int file_io_handle_is_open                      = 0;
 	int file_io_handle_opened_in_library            = 0;
-	int result                                      = 0;
+	int result                                      = 1;
 
 	if( handle == NULL )
 	{
@@ -625,17 +604,6 @@ int libbfoverlay_handle_open_file_io_handle(
 		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
 		 LIBCERROR_ARGUMENT_ERROR_UNSUPPORTED_VALUE,
 		 "%s: unsupported access flags.",
-		 function );
-
-		return( -1 );
-	}
-	if( ( access_flags & LIBBFOVERLAY_ACCESS_FLAG_WRITE ) != 0 )
-	{
-		libcerror_error_set(
-		 error,
-		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
-		 LIBCERROR_ARGUMENT_ERROR_UNSUPPORTED_VALUE,
-		 "%s: write access currently not supported.",
 		 function );
 
 		return( -1 );
@@ -692,12 +660,10 @@ int libbfoverlay_handle_open_file_io_handle(
 		return( -1 );
 	}
 #endif
-	result = libbfoverlay_internal_handle_open_read(
-	          internal_handle,
-	          file_io_handle,
-	          error );
-
-	if( result != 1 )
+	if( libbfoverlay_internal_handle_open_read(
+	     internal_handle,
+	     file_io_handle,
+	     error ) != 1 )
 	{
 		libcerror_error_set(
 		 error,
@@ -705,9 +671,12 @@ int libbfoverlay_handle_open_file_io_handle(
 		 LIBCERROR_IO_ERROR_READ_FAILED,
 		 "%s: unable to read from file IO handle.",
 		 function );
+
+		result = -1;
 	}
 	else
 	{
+		internal_handle->access_flags                     = access_flags;
 		internal_handle->file_io_handle                   = file_io_handle;
 		internal_handle->file_io_handle_opened_in_library = (uint8_t) file_io_handle_opened_in_library;
 	}
@@ -750,6 +719,7 @@ int libbfoverlay_internal_handle_open_data_files(
 	libbfoverlay_layer_t *layer  = NULL;
 	static char *function        = "libbfoverlay_internal_handle_open_data_files";
 	size64_t file_size           = 0;
+	int bfio_access_flags        = 0;
 	int layer_index              = 0;
 	int number_of_layers         = 0;
 
@@ -766,6 +736,28 @@ int libbfoverlay_internal_handle_open_data_files(
 		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
 		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
 		 "%s: invalid handle.",
+		 function );
+
+		return( -1 );
+	}
+	if( internal_handle->cow_file != NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_ALREADY_SET,
+		 "%s: invalid handle - COW file already exists.",
+		 function );
+
+		return( -1 );
+	}
+	if( internal_handle->cow_block_data != NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_ALREADY_SET,
+		 "%s: invalid handle - COW block data already exists.",
 		 function );
 
 		return( -1 );
@@ -834,6 +826,17 @@ int libbfoverlay_internal_handle_open_data_files(
 		if( ( layer->data_file_path != NULL )
 		 && ( layer->data_file_path_size > 0 ) )
 		{
+			bfio_access_flags = LIBBFIO_OPEN_READ;
+
+			if( ( layer_index == ( number_of_layers - 1 ) )
+			 && ( layer->use_cow != 0 ) )
+			{
+				if( ( internal_handle->access_flags & LIBBFOVERLAY_ACCESS_FLAG_WRITE ) != 0 )
+				{
+					bfio_access_flags |= LIBBFIO_OPEN_WRITE;
+				}
+				internal_handle->cow_file_io_pool_entry = number_of_layers - 1;
+			}
 #if defined( HAVE_WIDE_SYSTEM_CHARACTER )
 #if SIZEOF_WCHAR_T == 4
 			result = libuna_utf32_string_size_from_utf8(
@@ -862,7 +865,7 @@ int libbfoverlay_internal_handle_open_data_files(
 				goto on_error;
 			}
 			if( ( wide_file_path_size == 0 )
-			 || ( wide_file_path_size > ( 32 * 1024 * sizeof( wchar_t ) ) ) )
+			 || ( wide_file_path_size > ( LIBBFOVERLAY_MAXIMUM_PATH_SIZE * sizeof( wchar_t ) ) ) )
 			{
 				libcerror_error_set(
 				 error,
@@ -919,14 +922,14 @@ int libbfoverlay_internal_handle_open_data_files(
 			     file_io_pool,
 			     layer_index,
 			     wide_file_path,
-			     LIBBFIO_OPEN_READ,
+			     bfio_access_flags,
 			     error ) != 1 )
 #else
 			if( libbfio_file_pool_open(
 			     file_io_pool,
 			     layer_index,
 			     (char *) layer->data_file_path,
-			     LIBBFIO_OPEN_READ,
+			     bfio_access_flags,
 			     error ) != 1 )
 #endif
 			{
@@ -1093,6 +1096,78 @@ int libbfoverlay_internal_handle_open_data_files(
 			}
 		}
 	}
+	if( internal_handle->cow_file_io_pool_entry != -1 )
+	{
+		if( libbfoverlay_cow_file_initialize(
+		     &( internal_handle->cow_file ),
+		     internal_handle->size,
+		     error ) != 1 )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+			 LIBCERROR_RUNTIME_ERROR_INITIALIZE_FAILED,
+			 "%s: unable to create COW file.",
+			 function );
+
+			goto on_error;
+		}
+		if( libbfoverlay_cow_file_open(
+		     internal_handle->cow_file,
+		     file_io_pool,
+		     internal_handle->cow_file_io_pool_entry,
+		     error ) != 1 )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_IO,
+			 LIBCERROR_IO_ERROR_OPEN_FAILED,
+			 "%s: unable to open COW file.",
+			 function );
+
+			goto on_error;
+		}
+		if( ( internal_handle->cow_file->block_size == 0 )
+		 || ( internal_handle->cow_file->block_size > (size_t) MEMORY_MAXIMUM_ALLOCATION_SIZE ) )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+			 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+			 "%s: invalid COW file - block size exceed maximum allocation size.",
+			 function );
+
+			goto on_error;
+		}
+		internal_handle->cow_block_data = (uint8_t *) memory_allocate(
+		                                               internal_handle->cow_file->block_size );
+
+		if( internal_handle->cow_block_data == NULL )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_MEMORY,
+			 LIBCERROR_MEMORY_ERROR_INSUFFICIENT,
+			 "%s: unable to create COW block data.",
+			 function );
+
+			goto on_error;
+		}
+		if( memory_set(
+		     internal_handle->cow_block_data,
+		     0,
+		     internal_handle->cow_file->block_size ) == NULL )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_MEMORY,
+			 LIBCERROR_MEMORY_ERROR_SET_FAILED,
+			 "%s: unable to clear COW block data.",
+			 function );
+
+			goto on_error;
+		}
+	}
 	if( libbfoverlay_internal_handle_open_determine_ranges(
 	     internal_handle,
 	     error ) != 1 )
@@ -1112,6 +1187,19 @@ int libbfoverlay_internal_handle_open_data_files(
 	return( 1 );
 
 on_error:
+	if( internal_handle->cow_block_data != NULL )
+	{
+		memory_free(
+		 internal_handle->cow_block_data );
+
+		internal_handle->cow_block_data = NULL;
+	}
+	if( internal_handle->cow_file != NULL )
+	{
+		libbfoverlay_cow_file_free(
+		 &( internal_handle->cow_file ),
+		 NULL );
+	}
 #if defined( HAVE_WIDE_SYSTEM_CHARACTER )
 	if( wide_file_path != NULL )
 	{
@@ -1358,6 +1446,38 @@ int libbfoverlay_handle_close(
 		return( -1 );
 	}
 #endif
+	if( internal_handle->cow_file != NULL )
+	{
+		if( libbfoverlay_cow_file_close(
+		     internal_handle->cow_file,
+		     internal_handle->data_file_io_pool,
+		     internal_handle->cow_file_io_pool_entry,
+		     error ) != 0 )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_IO,
+			 LIBCERROR_IO_ERROR_CLOSE_FAILED,
+			 "%s: unable to close COW file.",
+			 function );
+
+			result = -1;
+		}
+		if( libbfoverlay_cow_file_free(
+		     &( internal_handle->cow_file ),
+		     error ) != 1 )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+			 LIBCERROR_RUNTIME_ERROR_FINALIZE_FAILED,
+			 "%s: unable to free COW file.",
+			 function );
+
+			result = -1;
+		}
+		internal_handle->cow_file_io_pool_entry = -1;
+	}
 	if( internal_handle->file_io_handle_opened_in_library != 0 )
 	{
 		if( libbfio_handle_close(
@@ -1442,6 +1562,13 @@ int libbfoverlay_handle_close(
 
 			result = -1;
 		}
+	}
+	if( internal_handle->cow_block_data != NULL )
+	{
+		memory_free(
+		 internal_handle->cow_block_data );
+
+		internal_handle->cow_block_data = NULL;
 	}
 	if( internal_handle->ranges_array != 0 )
 	{
@@ -1669,12 +1796,20 @@ int libbfoverlay_internal_handle_open_determine_ranges(
 
 			goto on_error;
 		}
+		if( layer->use_cow != 0 )
+		{
+			continue;
+		}
 		current_layer_offset     = layer->offset;
 		remaining_layer_size     = layer->size;
 		current_data_file_offset = layer->file_offset;
 
-		range_flags = ( layer->data_file_path == NULL );
+		range_flags = 0;
 
+		if( layer->data_file_path == NULL )
+		{
+			range_flags |= LIBBFOVERLAY_RANGE_FLAG_IS_SPARSE;
+		}
 #if defined( HAVE_DEBUG_OUTPUT )
 		if( libcnotify_verbose != 0 )
 		{
@@ -1871,6 +2006,113 @@ on_error:
 	return( -1 );
 }
 
+/* Retrieve the range for a specific offset
+ * Returns 1 if successful, 0 if no range exists or -1 on error
+ */
+int libbfoverlay_internal_handle_get_range_at_offset(
+     libbfoverlay_internal_handle_t *internal_handle,
+     off64_t offset,
+     int *range_index,
+     libbfoverlay_range_t **range,
+     libcerror_error_t **error )
+{
+	libbfoverlay_range_t *safe_range = NULL;
+	static char *function            = "libbfoverlay_internal_handle_get_range_at_offset";
+	int number_of_ranges             = 0;
+	int safe_range_index             = 0;
+
+	if( internal_handle == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
+		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
+		 "%s: invalid handle.",
+		 function );
+
+		return( -1 );
+	}
+	if( range_index == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
+		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
+		 "%s: invalid range index.",
+		 function );
+
+		return( -1 );
+	}
+	if( range == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
+		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
+		 "%s: invalid range.",
+		 function );
+
+		return( -1 );
+	}
+/* TODO preserve current range and index */
+	if( libcdata_array_get_number_of_entries(
+	     internal_handle->ranges_array,
+	     &number_of_ranges,
+	     error ) != 1 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
+		 "%s: unable to retrieve number of ranges.",
+		 function );
+
+		return( -1 );
+	}
+	for( safe_range_index = 0;
+	     safe_range_index < number_of_ranges;
+	     safe_range_index++ )
+	{
+		if( libcdata_array_get_entry_by_index(
+		     internal_handle->ranges_array,
+		     safe_range_index,
+		     (intptr_t **) &safe_range,
+		     error ) != 1 )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+			 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
+			 "%s: unable to retrieve range: %d.",
+			 function,
+			 safe_range_index );
+
+			return( -1 );
+		}
+		if( range == NULL )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+			 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
+			 "%s: missing range: %d.",
+			 function,
+			 safe_range_index );
+
+			return( -1 );
+		}
+		if( ( offset >= safe_range->start_offset )
+		 && ( offset < safe_range->end_offset ) )
+		{
+			*range_index = safe_range_index;
+			*range       = safe_range;
+
+			return( 1 );
+		}
+	}
+	return( 0 );
+}
+
 /* Reads data from the current offset into a buffer
  * This function is not multi-thread safe acquire write lock before call
  * Returns the number of bytes read or -1 on error
@@ -1881,14 +2123,17 @@ ssize_t libbfoverlay_internal_handle_read_buffer(
          size_t buffer_size,
          libcerror_error_t **error )
 {
-	libbfoverlay_range_t *range = NULL;
-	static char *function       = "libbfoverlay_internal_handle_read_buffer";
-	size_t buffer_offset        = 0;
-	size_t read_size            = 0;
-	ssize_t read_count          = 0;
-	off64_t file_offset         = 0;
-	int number_of_ranges        = 0;
-	int range_index             = 0;
+	libbfoverlay_range_t *range    = NULL;
+	static char *function          = "libbfoverlay_internal_handle_read_buffer";
+	size_t buffer_offset           = 0;
+	size_t cow_block_offset        = 0;
+	size_t read_size               = 0;
+	ssize_t read_count             = 0;
+	off64_t cow_block_end_offset   = 0;
+	off64_t cow_block_start_offset = 0;
+	off64_t file_offset            = 0;
+	int range_index                = 0;
+	int result                     = 0;
 
 	if( internal_handle == NULL )
 	{
@@ -1931,111 +2176,152 @@ ssize_t libbfoverlay_internal_handle_read_buffer(
 	{
 		buffer_size = (size_t) ( internal_handle->size - internal_handle->current_offset );
 	}
-/* TODO move into get range by offset function ? */
-/* TODO preserve current range and index */
-	if( libcdata_array_get_number_of_entries(
-	     internal_handle->ranges_array,
-	     &number_of_ranges,
+	if( libbfoverlay_internal_handle_get_range_at_offset(
+	     internal_handle,
+	     internal_handle->current_offset,
+	     &range_index,
+	     &range,
 	     error ) != 1 )
 	{
 		libcerror_error_set(
 		 error,
 		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
 		 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
-		 "%s: unable to retrieve number of ranges.",
-		 function );
+		 "%s: unable to retrieve range at offset %" PRIi64 " (0x%08" PRIx64 ").",
+		 function,
+		 internal_handle->current_offset,
+		 internal_handle->current_offset );
 
 		return( -1 );
-	}
-	for( range_index = 0;
-	     range_index < number_of_ranges;
-	     range_index++ )
-	{
-		if( libcdata_array_get_entry_by_index(
-		     internal_handle->ranges_array,
-		     range_index,
-		     (intptr_t **) &range,
-		     error ) != 1 )
-		{
-			libcerror_error_set(
-			 error,
-			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
-			 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
-			 "%s: unable to retrieve range: %d.",
-			 function,
-			 range_index );
-
-			return( -1 );
-		}
-		if( range == NULL )
-		{
-			libcerror_error_set(
-			 error,
-			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
-			 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
-			 "%s: missing range: %d.",
-			 function,
-			 range_index );
-
-			return( -1 );
-		}
-		if( ( internal_handle->current_offset >= range->start_offset )
-		 && ( internal_handle->current_offset < range->end_offset ) )
-		{
-			break;
-		}
 	}
 	while( buffer_offset < buffer_size )
 	{
 		read_size = buffer_size - buffer_offset;
 
-		if( (int64_t) read_size > ( range->end_offset - internal_handle->current_offset ) )
+		if( internal_handle->cow_file == NULL )
 		{
-			read_size = (size_t) ( range->end_offset - internal_handle->current_offset );
+			result = 0;
 		}
-		if( ( range->flags & 1 ) != 0 )
+		else
 		{
-			if( memory_set(
-			     &( buffer[ buffer_offset ] ),
-			     0,
-			     read_size ) == NULL )
+			result = libbfoverlay_cow_file_get_block_at_offset(
+			          internal_handle->cow_file,
+			          internal_handle->current_offset,
+			          &cow_block_start_offset,
+			          &cow_block_end_offset,
+			          &file_offset,
+			          error );
+
+			if( result == -1 )
 			{
 				libcerror_error_set(
 				 error,
-				 LIBCERROR_ERROR_DOMAIN_MEMORY,
-				 LIBCERROR_MEMORY_ERROR_SET_FAILED,
-				 "%s: unable to clear buffer.",
-				 function );
+				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+				 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
+				 "%s: unable to retrieve COW block at offset %" PRIi64 " (0x%08" PRIx64 ").",
+				 function,
+				 internal_handle->current_offset,
+				 internal_handle->current_offset );
 
 				return( -1 );
 			}
 		}
-		else
+		if( result != 0 )
 		{
-			file_offset = range->data_file_offset + ( internal_handle->current_offset - range->start_offset );
-
 			read_count = libbfio_pool_read_buffer_at_offset(
 			              internal_handle->data_file_io_pool,
-			              range->data_file_index,
-			              &( buffer[ buffer_offset ] ),
-			              read_size,
+			              internal_handle->cow_file_io_pool_entry,
+			              internal_handle->cow_block_data,
+			              internal_handle->cow_file->block_size,
 			              file_offset,
 			              error );
 
-			if( read_count != (ssize_t) read_size )
+			if( read_count != (ssize_t) internal_handle->cow_file->block_size )
 			{
 				libcerror_error_set(
 				 error,
 				 LIBCERROR_ERROR_DOMAIN_IO,
 				 LIBCERROR_IO_ERROR_READ_FAILED,
-				 "%s: unable to read data of size: %" PRIzd " from layer: %d at offset %" PRIi64 " (0x%08" PRIx64 ").",
+				 "%s: unable to read COW block of size: %" PRIzd " from COW file at offset %" PRIi64 " (0x%08" PRIx64 ").",
 				 function,
-				 read_size,
-				 range->data_file_index,
-				 file_offset,
-				 file_offset );
+				 internal_handle->cow_file->block_size,
+				 cow_block_offset,
+				 cow_block_offset );
 
 				return( -1 );
+			}
+			cow_block_offset = (size_t) ( internal_handle->current_offset - cow_block_start_offset );
+
+			if( (int64_t) read_size > ( cow_block_end_offset - internal_handle->current_offset ) )
+			{
+				read_size = (size_t) ( cow_block_end_offset - internal_handle->current_offset );
+			}
+			if( memory_copy(
+			     &( buffer[ buffer_offset ] ),
+			     &( ( internal_handle->cow_block_data )[ cow_block_offset ] ),
+			     read_size ) == NULL )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_MEMORY,
+				 LIBCERROR_MEMORY_ERROR_COPY_FAILED,
+				 "%s: unable to copy buffer from COW block data.",
+				 function );
+
+				return( -1 );
+			}
+			read_count = (ssize_t) read_size;
+		}
+		else
+		{
+			if( (int64_t) read_size > ( range->end_offset - internal_handle->current_offset ) )
+			{
+				read_size = (size_t) ( range->end_offset - internal_handle->current_offset );
+			}
+			if( ( range->flags & LIBBFOVERLAY_RANGE_FLAG_IS_SPARSE ) != 0 )
+			{
+				if( memory_set(
+				     &( buffer[ buffer_offset ] ),
+				     0,
+				     read_size ) == NULL )
+				{
+					libcerror_error_set(
+					 error,
+					 LIBCERROR_ERROR_DOMAIN_MEMORY,
+					 LIBCERROR_MEMORY_ERROR_SET_FAILED,
+					 "%s: unable to clear buffer.",
+					 function );
+
+					return( -1 );
+				}
+			}
+			else
+			{
+				file_offset = range->data_file_offset + ( internal_handle->current_offset - range->start_offset );
+
+				read_count = libbfio_pool_read_buffer_at_offset(
+				              internal_handle->data_file_io_pool,
+				              range->data_file_index,
+				              &( buffer[ buffer_offset ] ),
+				              read_size,
+				              file_offset,
+				              error );
+
+				if( read_count != (ssize_t) read_size )
+				{
+					libcerror_error_set(
+					 error,
+					 LIBCERROR_ERROR_DOMAIN_IO,
+					 LIBCERROR_IO_ERROR_READ_FAILED,
+					 "%s: unable to read data of size: %" PRIzd " from layer: %d at offset %" PRIi64 " (0x%08" PRIx64 ").",
+					 function,
+					 read_size,
+					 range->data_file_index,
+					 file_offset,
+					 file_offset );
+
+					return( -1 );
+				}
 			}
 		}
 		buffer_offset += read_size;
@@ -2046,35 +2332,39 @@ ssize_t libbfoverlay_internal_handle_read_buffer(
 		{
 			break;
 		}
-		range_index++;
-
-		if( libcdata_array_get_entry_by_index(
-		     internal_handle->ranges_array,
-		     range_index,
-		     (intptr_t **) &range,
-		     error ) != 1 )
+		if( internal_handle->current_offset >= range->end_offset )
 		{
-			libcerror_error_set(
-			 error,
-			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
-			 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
-			 "%s: unable to retrieve range: %d.",
-			 function,
-			 range_index );
+/* TODO preserve current range and index */
+			range_index++;
 
-			return( -1 );
-		}
-		if( range == NULL )
-		{
-			libcerror_error_set(
-			 error,
-			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
-			 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
-			 "%s: missing range: %d.",
-			 function,
-			 range_index );
+			if( libcdata_array_get_entry_by_index(
+			     internal_handle->ranges_array,
+			     range_index,
+			     (intptr_t **) &range,
+			     error ) != 1 )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+				 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
+				 "%s: unable to retrieve range: %d.",
+				 function,
+				 range_index );
 
-			return( -1 );
+				return( -1 );
+			}
+			if( range == NULL )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+				 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
+				 "%s: missing range: %d.",
+				 function,
+				 range_index );
+
+				return( -1 );
+			}
 		}
 	}
 	return( (ssize_t) buffer_offset );
@@ -2273,8 +2563,6 @@ ssize_t libbfoverlay_handle_read_buffer_at_offset(
 	return( read_count );
 }
 
-#ifdef TODO
-
 /* Writes data from buffer at the current offset
  * This function is not multi-thread safe acquire write lock before call
  * Returns the number of bytes written or -1 on error
@@ -2285,8 +2573,239 @@ ssize_t libbfoverlay_internal_handle_write_buffer(
          size_t buffer_size,
          libcerror_error_t **error )
 {
-/* TODO implement */
-	return( -1 );
+	libbfoverlay_range_t *range    = NULL;
+	static char *function          = "libbfoverlay_internal_handle_read_buffer";
+	size_t buffer_offset           = 0;
+	size_t cow_block_offset        = 0;
+	size_t read_size               = 0;
+	ssize_t read_count             = 0;
+	ssize_t write_count            = 0;
+	off64_t cow_block_end_offset   = 0;
+	off64_t cow_block_start_offset = 0;
+	off64_t file_offset            = 0;
+	int range_index                = 0;
+	int result                     = 0;
+
+	if( internal_handle == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
+		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
+		 "%s: invalid handle.",
+		 function );
+
+		return( -1 );
+	}
+	if( buffer == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
+		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
+		 "%s: invalid buffer.",
+		 function );
+
+		return( -1 );
+	}
+	if( buffer_size > (size_t) SSIZE_MAX )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
+		 LIBCERROR_ARGUMENT_ERROR_VALUE_EXCEEDS_MAXIMUM,
+		 "%s: invalid buffer size value exceeds maximum.",
+		 function );
+
+		return( -1 );
+	}
+	if( (size64_t) internal_handle->current_offset >= internal_handle->size )
+	{
+		return( 0 );
+	}
+	if( (size64_t) buffer_size > ( internal_handle->size - internal_handle->current_offset ) )
+	{
+		buffer_size = (size_t) ( internal_handle->size - internal_handle->current_offset );
+	}
+	if( libbfoverlay_internal_handle_get_range_at_offset(
+	     internal_handle,
+	     internal_handle->current_offset,
+	     &range_index,
+	     &range,
+	     error ) != 1 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
+		 "%s: unable to retrieve range at offset %" PRIi64 " (0x%08" PRIx64 ").",
+		 function,
+		 internal_handle->current_offset,
+		 internal_handle->current_offset );
+
+		return( -1 );
+	}
+	while( buffer_offset < buffer_size )
+	{
+		result = libbfoverlay_cow_file_get_block_at_offset(
+		          internal_handle->cow_file,
+		          internal_handle->current_offset,
+		          &cow_block_start_offset,
+		          &cow_block_end_offset,
+		          &file_offset,
+		          error );
+
+		if( result == -1 )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+			 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
+			 "%s: unable to retrieve COW block at offset %" PRIi64 " (0x%08" PRIx64 ").",
+			 function,
+			 internal_handle->current_offset,
+			 internal_handle->current_offset );
+
+			return( -1 );
+		}
+		else if( result != 0 )
+		{
+			read_count = libbfio_pool_read_buffer_at_offset(
+			              internal_handle->data_file_io_pool,
+			              internal_handle->cow_file_io_pool_entry,
+			              internal_handle->cow_block_data,
+			              internal_handle->cow_file->block_size,
+			              file_offset,
+			              error );
+
+			if( read_count != (ssize_t) internal_handle->cow_file->block_size )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_IO,
+				 LIBCERROR_IO_ERROR_READ_FAILED,
+				 "%s: unable to read COW block of size: %" PRIzd " from COW at offset %" PRIi64 " (0x%08" PRIx64 ").",
+				 function,
+				 internal_handle->cow_file->block_size,
+				 cow_block_offset,
+				 cow_block_offset );
+
+				return( -1 );
+			}
+		}
+		else if( ( range->flags & LIBBFOVERLAY_RANGE_FLAG_IS_SPARSE ) != 0 )
+		{
+			if( memory_set(
+			     internal_handle->cow_block_data,
+			     0,
+			     internal_handle->cow_file->block_size ) == NULL )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_MEMORY,
+				 LIBCERROR_MEMORY_ERROR_SET_FAILED,
+				 "%s: unable to clear COW block.",
+				 function );
+
+				return( -1 );
+			}
+		}
+		else
+		{
+			file_offset  = range->data_file_offset + ( internal_handle->current_offset - range->start_offset );
+			file_offset /= internal_handle->cow_file->block_size;
+			file_offset *= internal_handle->cow_file->block_size;
+
+			read_count = libbfio_pool_read_buffer_at_offset(
+			              internal_handle->data_file_io_pool,
+			              range->data_file_index,
+			              internal_handle->cow_block_data,
+			              internal_handle->cow_file->block_size,
+			              file_offset,
+			              error );
+
+			if( read_count != (ssize_t) internal_handle->cow_file->block_size )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_IO,
+				 LIBCERROR_IO_ERROR_READ_FAILED,
+				 "%s: unable to read data of size: %" PRIzd " from layer: %d at offset %" PRIi64 " (0x%08" PRIx64 ").",
+				 function,
+				 read_size,
+				 range->data_file_index,
+				 file_offset,
+				 file_offset );
+
+				return( -1 );
+			}
+		}
+		cow_block_offset = (size_t) ( internal_handle->current_offset - cow_block_start_offset );
+
+		read_size = buffer_size - buffer_offset;
+
+		if( (int64_t) read_size > ( cow_block_end_offset - internal_handle->current_offset ) )
+		{
+			read_size = (size_t) ( cow_block_end_offset - internal_handle->current_offset );
+		}
+		if( memory_copy(
+		     &( ( internal_handle->cow_block_data )[ cow_block_offset ] ),
+		     &( buffer[ buffer_offset ] ),
+		     read_size ) == NULL )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_MEMORY,
+			 LIBCERROR_MEMORY_ERROR_COPY_FAILED,
+			 "%s: unable to copy buffer to COW block data.",
+			 function );
+
+			return( -1 );
+		}
+		if( result == 0 )
+		{
+			if( libbfoverlay_cow_file_allocate_block_for_offset(
+			     internal_handle->cow_file,
+			     internal_handle->current_offset,
+			     &file_offset,
+			     error ) != 1 )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+				 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
+				 "%s: unable to retrieve range at offset %" PRIi64 " (0x%08" PRIx64 ").",
+				 function,
+				 internal_handle->current_offset,
+				 internal_handle->current_offset );
+
+				return( -1 );
+			}
+		}
+		write_count = libbfio_pool_write_buffer_at_offset(
+		               internal_handle->data_file_io_pool,
+		               internal_handle->cow_file_io_pool_entry,
+		               internal_handle->cow_block_data,
+		               internal_handle->cow_file->block_size,
+		               file_offset,
+		               error );
+
+		if( write_count != (ssize_t) internal_handle->cow_file->block_size )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_IO,
+			 LIBCERROR_IO_ERROR_READ_FAILED,
+			 "%s: unable to write COW block of size: %" PRIzd " to COW file at offset %" PRIi64 " (0x%08" PRIx64 ").",
+			 function,
+			 internal_handle->cow_file->block_size,
+			 cow_block_offset,
+			 cow_block_offset );
+
+			return( -1 );
+		}
+	}
+	return( (ssize_t) buffer_offset );
 }
 
 /* Writes data from buffer at the current offset
@@ -2295,7 +2814,7 @@ ssize_t libbfoverlay_internal_handle_write_buffer(
 ssize_t libbfoverlay_handle_write_buffer(
          libbfoverlay_handle_t *handle,
          const uint8_t *buffer,
-         size_t size,
+         size_t buffer_size,
          libcerror_error_t **error )
 {
 	libbfoverlay_internal_handle_t *internal_handle = NULL;
@@ -2326,6 +2845,17 @@ ssize_t libbfoverlay_handle_write_buffer(
 
 		return( -1 );
 	}
+	if( internal_handle->cow_file == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
+		 "%s: invalid handle - missing COW file.",
+		 function );
+
+		return( -1 );
+	}
 	if( buffer == NULL )
 	{
 		libcerror_error_set(
@@ -2337,7 +2867,7 @@ ssize_t libbfoverlay_handle_write_buffer(
 
 		return( -1 );
 	}
-	if( size > (size_t) SSIZE_MAX )
+	if( buffer_size > (size_t) SSIZE_MAX )
 	{
 		libcerror_error_set(
 		 error,
@@ -2436,6 +2966,17 @@ ssize_t libbfoverlay_handle_write_buffer_at_offset(
 
 		return( -1 );
 	}
+	if( internal_handle->cow_file == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
+		 "%s: invalid handle - missing COW file.",
+		 function );
+
+		return( -1 );
+	}
 #if defined( HAVE_MULTI_THREAD_SUPPORT ) && !defined( HAVE_LOCAL_LIBBFOVERLAY )
 	if( libcthreads_read_write_lock_grab_for_write(
 	     internal_handle->read_write_lock,
@@ -2503,7 +3044,6 @@ ssize_t libbfoverlay_handle_write_buffer_at_offset(
 #endif
 	return( write_count );
 }
-#endif /* TODO */
 
 /* Seeks a certain offset of the data
  * This function is not multi-thread safe acquire write lock before call

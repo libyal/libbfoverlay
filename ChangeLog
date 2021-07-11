@@ -2,10 +2,14 @@ TODO:
 * library
 ** add indication to specify all remaining data
 ** complete open data file IO handles function
-** add virtual write layer
-** add write tracking log
 ** add support to track reads and writes in a log file?
 ** add support to read and cache in memory for slow media?
+
+* COW file format
+** complete read of allocation table
+** add read and write functions
+** add multi-level allocation table to reduce overhead of size of table in file
+** merge COW allocation table into range array?
 
 * tests
 ** complete handle tests

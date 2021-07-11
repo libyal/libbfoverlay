@@ -187,6 +187,7 @@ int libbfoverlay_descriptor_file_read_data(
 	size_t value_string_size              = 0;
 	uint64_t value_64bit                  = 0;
 	int64_t base_layer_size               = -1;
+	int cow_layer_index                   = -1;
 	int entry_index                       = 0;
 	int layer_index                       = 0;
 	int line_index                        = 0;
@@ -516,29 +517,13 @@ int libbfoverlay_descriptor_file_read_data(
 					goto on_error;
 				}
 			}
-			else if( ( value_string_size > 11 )
+			else if( ( value_string_size > 13 )
 			      && ( memory_compare(
 			            value_string,
-			            "cow_file=\"",
-			            10 ) == 0 )
-			      && ( value_string[ value_string_size - 2 ] == '"' ) )
+			            "copy-on-write",
+			            13 ) == 0 ) )
 			{
-				if( libbfoverlay_layer_set_cow_file_path(
-				     layer,
-				     &( value_string[ 10 ] ),
-				     value_string_size - 11,
-				     error ) != 1 )
-				{
-					libcerror_error_set(
-					 error,
-					 LIBCERROR_ERROR_DOMAIN_MEMORY,
-					 LIBCERROR_MEMORY_ERROR_SET_FAILED,
-					 "%s: unable to set layer: %d COW file path.",
-					 function,
-					 layer_index );
-
-					goto on_error;
-				}
+				layer->use_cow = 1;
 			}
 			else if( ( value_string_size > 12 )
 			      && ( memory_compare(
@@ -591,7 +576,59 @@ int libbfoverlay_descriptor_file_read_data(
 
 			goto on_error;
 		}
-		if( layer->data_file_path == NULL )
+		if( layer->use_cow != 0 )
+		{
+			if( cow_layer_index != -1 )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+				 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+				 "%s: invalid layer: %d only the last layer can use COW.",
+				 function,
+				 cow_layer_index );
+
+				goto on_error;
+			}
+			if( layer->file_offset != -1 )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+				 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+				 "%s: invalid layer: %d file offset specified in combination COW.",
+				 function,
+				 layer_index );
+
+				goto on_error;
+			}
+			if( layer->offset != -1 )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+				 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+				 "%s: invalid layer: %d offset specified in combination COW.",
+				 function,
+				 layer_index );
+
+				goto on_error;
+			}
+			if( layer->size != -1 )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+				 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+				 "%s: invalid layer: %d size specified in combination COW.",
+				 function,
+				 layer_index );
+
+				goto on_error;
+			}
+			cow_layer_index = layer_index;
+		}
+		else if( layer->data_file_path == NULL )
 		{
 			if( layer->size == -1 )
 			{
@@ -713,6 +750,19 @@ int libbfoverlay_descriptor_file_read_data(
 		layer = NULL;
 
 		layer_index++;
+	}
+	if( ( cow_layer_index != -1 )
+	 && ( cow_layer_index < ( layer_index - 1 ) ) )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+		 "%s: invalid layer: %d only the last layer can use COW.",
+		 function,
+		 cow_layer_index );
+
+		goto on_error;
 	}
 	if( libfvalue_split_utf8_string_free(
 	     &lines,

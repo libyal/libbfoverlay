@@ -55,13 +55,9 @@ struct libbfoverlay_layer
 	 */
 	off64_t file_offset;
 
-	/* COW file path
+	/* Use copy-on-write (COW)
 	 */
-	uint8_t *cow_file_path;
-
-	/* COW file path size
-	 */
-	size_t cow_file_path_size;
+	int8_t use_cow;
 };
 
 int libbfoverlay_layer_initialize(
@@ -70,12 +66,6 @@ int libbfoverlay_layer_initialize(
 
 int libbfoverlay_layer_free(
      libbfoverlay_layer_t **layer,
-     libcerror_error_t **error );
-
-int libbfoverlay_layer_set_cow_file_path(
-     libbfoverlay_layer_t *layer,
-     const uint8_t *path,
-     size_t path_size,
      libcerror_error_t **error );
 
 int libbfoverlay_layer_set_data_file_path(
