@@ -32,6 +32,7 @@
 #include "libbfoverlay_libbfio.h"
 #include "libbfoverlay_libcdata.h"
 #include "libbfoverlay_libcerror.h"
+#include "libbfoverlay_libcfile.h"
 #include "libbfoverlay_libcnotify.h"
 #include "libbfoverlay_libcthreads.h"
 #include "libbfoverlay_libuna.h"
@@ -722,11 +723,11 @@ int libbfoverlay_internal_handle_open_data_files(
 	int bfio_access_flags        = 0;
 	int layer_index              = 0;
 	int number_of_layers         = 0;
+	int result                   = 0;
 
 #if defined( HAVE_WIDE_SYSTEM_CHARACTER )
 	wchar_t *wide_file_path      = NULL;
 	size_t wide_file_path_size   = 0;
-	int result                   = 0;
 #endif
 
 	if( internal_handle == NULL )
@@ -826,17 +827,6 @@ int libbfoverlay_internal_handle_open_data_files(
 		if( ( layer->data_file_path != NULL )
 		 && ( layer->data_file_path_size > 0 ) )
 		{
-			bfio_access_flags = LIBBFIO_OPEN_READ;
-
-			if( ( layer_index == ( number_of_layers - 1 ) )
-			 && ( layer->use_cow != 0 ) )
-			{
-				if( ( internal_handle->access_flags & LIBBFOVERLAY_ACCESS_FLAG_WRITE ) != 0 )
-				{
-					bfio_access_flags |= LIBBFIO_OPEN_WRITE;
-				}
-				internal_handle->cow_file_io_pool_entry = number_of_layers - 1;
-			}
 #if defined( HAVE_WIDE_SYSTEM_CHARACTER )
 #if SIZEOF_WCHAR_T == 4
 			result = libuna_utf32_string_size_from_utf8(
@@ -918,6 +908,46 @@ int libbfoverlay_internal_handle_open_data_files(
 
 				goto on_error;
 			}
+#endif /* defined( HAVE_WIDE_SYSTEM_CHARACTER ) */
+
+			bfio_access_flags = LIBBFIO_OPEN_READ;
+
+			if( ( layer_index == ( number_of_layers - 1 ) )
+			 && ( layer->use_cow != 0 ) )
+			{
+				if( ( internal_handle->access_flags & LIBBFOVERLAY_ACCESS_FLAG_WRITE ) == 0 )
+				{
+#if defined( HAVE_WIDE_SYSTEM_CHARACTER )
+					result = libcfile_file_exists_wide(
+					          wide_file_path,
+					          error );
+#else
+					result = libcfile_file_exists(
+					          (char *) layer->data_file_path,
+					          error );
+#endif
+					if( result == -1 )
+					{
+						libcerror_error_set(
+						 error,
+						 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+						 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
+						 "%s: unable to determine COW layer: %d file size.",
+						 function,
+						 layer_index );
+
+						goto on_error;
+					}
+					else if( result == 0 )
+					{
+						continue;
+					}
+				}
+				bfio_access_flags |= LIBBFIO_OPEN_WRITE;
+
+				internal_handle->cow_file_io_pool_entry = number_of_layers - 1;
+			}
+#if defined( HAVE_WIDE_SYSTEM_CHARACTER )
 			if( libbfio_file_pool_open_wide(
 			     file_io_pool,
 			     layer_index,
@@ -949,6 +979,11 @@ int libbfoverlay_internal_handle_open_data_files(
 
 			wide_file_path = NULL;
 #endif
+			if( ( layer_index == ( number_of_layers - 1 ) )
+			 && ( layer->use_cow != 0 ) )
+			{
+				continue;
+			}
 			if( libbfio_pool_get_size(
 			     file_io_pool,
 			     layer_index,
@@ -965,8 +1000,19 @@ int libbfoverlay_internal_handle_open_data_files(
 
 				goto on_error;
 			}
-			if( ( file_size == 0 )
-			 || ( file_size > (size64_t) INT64_MAX ) )
+			if( file_size == 0 )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+				 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+				 "%s: invalid layer: %d data file size is 0.",
+				 function,
+				 layer_index );
+
+				goto on_error;
+			}
+			if( file_size > (size64_t) INT64_MAX )
 			{
 				libcerror_error_set(
 				 error,

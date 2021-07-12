@@ -590,30 +590,6 @@ int libbfoverlay_descriptor_file_read_data(
 
 				goto on_error;
 			}
-			if( layer->file_offset != -1 )
-			{
-				libcerror_error_set(
-				 error,
-				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
-				 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
-				 "%s: invalid layer: %d file offset specified in combination COW.",
-				 function,
-				 layer_index );
-
-				goto on_error;
-			}
-			if( layer->offset != -1 )
-			{
-				libcerror_error_set(
-				 error,
-				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
-				 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
-				 "%s: invalid layer: %d offset specified in combination COW.",
-				 function,
-				 layer_index );
-
-				goto on_error;
-			}
 			if( layer->size != -1 )
 			{
 				libcerror_error_set(
@@ -621,6 +597,18 @@ int libbfoverlay_descriptor_file_read_data(
 				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
 				 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
 				 "%s: invalid layer: %d size specified in combination COW.",
+				 function,
+				 layer_index );
+
+				goto on_error;
+			}
+			if( layer->file_offset != -1 )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+				 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+				 "%s: invalid layer: %d file offset specified in combination COW.",
 				 function,
 				 layer_index );
 

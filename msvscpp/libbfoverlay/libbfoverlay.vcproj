@@ -276,6 +276,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\libbfoverlay\libbfoverlay_libcfile.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\libbfoverlay\libbfoverlay_libclocale.h"
 				>
 			</File>

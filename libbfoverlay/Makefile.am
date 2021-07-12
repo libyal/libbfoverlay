@@ -33,6 +33,7 @@ libbfoverlay_la_SOURCES = \
 	libbfoverlay_libbfio.h \
 	libbfoverlay_libcdata.h \
 	libbfoverlay_libcerror.h \
+	libbfoverlay_libcfile.h \
 	libbfoverlay_libclocale.h \
 	libbfoverlay_libcnotify.h \
 	libbfoverlay_libcthreads.h \
