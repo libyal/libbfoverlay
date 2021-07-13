@@ -125,6 +125,13 @@ ssize_t mount_file_entry_read_buffer_at_offset(
          off64_t offset,
          libcerror_error_t **error );
 
+ssize_t mount_file_entry_write_buffer_at_offset(
+         mount_file_entry_t *file_entry,
+         const void *buffer,
+         size_t buffer_size,
+         off64_t offset,
+         libcerror_error_t **error );
+
 int mount_file_entry_get_size(
      mount_file_entry_t *file_entry,
      size64_t *size,

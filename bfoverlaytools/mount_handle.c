@@ -290,13 +290,13 @@ int mount_handle_open(
 	result = libbfoverlay_handle_open_wide(
 	          bfoverlay_handle,
 	          filename,
-	          LIBBFOVERLAY_OPEN_READ,
+	          LIBBFOVERLAY_OPEN_READ_WRITE,
 	          error );
 #else
 	result = libbfoverlay_handle_open(
 	          bfoverlay_handle,
 	          filename,
-	          LIBBFOVERLAY_OPEN_READ,
+	          LIBBFOVERLAY_OPEN_READ_WRITE,
 	          error );
 #endif
 	if( result == -1 )

@@ -67,13 +67,6 @@ int libbfoverlay_cow_allocation_table_read_file_io_pool(
      off64_t file_offset,
      libcerror_error_t **error );
 
-int libbfoverlay_cow_allocation_table_write_file_io_pool(
-     libbfoverlay_cow_allocation_table_t *cow_allocation_table,
-     libbfio_pool_t *file_io_pool,
-     int file_io_pool_entry,
-     off64_t file_offset,
-     libcerror_error_t **error );
-
 int libbfoverlay_cow_allocation_table_get_block_number_by_index(
      libbfoverlay_cow_allocation_table_t *cow_allocation_table,
      int table_index,
@@ -82,6 +75,8 @@ int libbfoverlay_cow_allocation_table_get_block_number_by_index(
 
 int libbfoverlay_cow_allocation_table_set_block_number_by_index(
      libbfoverlay_cow_allocation_table_t *cow_allocation_table,
+     libbfio_pool_t *file_io_pool,
+     int file_io_pool_entry,
      int table_index,
      uint64_t block_number,
      libcerror_error_t **error );

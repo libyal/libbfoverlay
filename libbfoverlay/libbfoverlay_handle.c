@@ -2620,7 +2620,7 @@ ssize_t libbfoverlay_internal_handle_write_buffer(
          libcerror_error_t **error )
 {
 	libbfoverlay_range_t *range    = NULL;
-	static char *function          = "libbfoverlay_internal_handle_read_buffer";
+	static char *function          = "libbfoverlay_internal_handle_write_buffer";
 	size_t buffer_offset           = 0;
 	size_t cow_block_offset        = 0;
 	size_t read_size               = 0;
@@ -2628,6 +2628,7 @@ ssize_t libbfoverlay_internal_handle_write_buffer(
 	ssize_t write_count            = 0;
 	off64_t cow_block_end_offset   = 0;
 	off64_t cow_block_start_offset = 0;
+	off64_t current_offset         = 0;
 	off64_t file_offset            = 0;
 	int range_index                = 0;
 	int result                     = 0;
@@ -2714,85 +2715,49 @@ ssize_t libbfoverlay_internal_handle_write_buffer(
 
 			return( -1 );
 		}
-		else if( result != 0 )
+		current_offset = internal_handle->current_offset;
+
+		read_count = libbfoverlay_internal_handle_read_buffer(
+			      internal_handle,
+		              internal_handle->cow_block_data,
+		              internal_handle->cow_file->block_size,
+			      error );
+
+		if( read_count == -1 )
 		{
-			read_count = libbfio_pool_read_buffer_at_offset(
-			              internal_handle->data_file_io_pool,
-			              internal_handle->cow_file_io_pool_entry,
-			              internal_handle->cow_block_data,
-			              internal_handle->cow_file->block_size,
-			              file_offset,
-			              error );
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_IO,
+			 LIBCERROR_IO_ERROR_READ_FAILED,
+			 "%s: unable to read COW block data.",
+			 function );
 
-			if( read_count != (ssize_t) internal_handle->cow_file->block_size )
-			{
-				libcerror_error_set(
-				 error,
-				 LIBCERROR_ERROR_DOMAIN_IO,
-				 LIBCERROR_IO_ERROR_READ_FAILED,
-				 "%s: unable to read COW block of size: %" PRIzd " from COW at offset %" PRIi64 " (0x%08" PRIx64 ").",
-				 function,
-				 internal_handle->cow_file->block_size,
-				 cow_block_offset,
-				 cow_block_offset );
-
-				return( -1 );
-			}
+			read_count = -1;
 		}
-		else if( ( range->flags & LIBBFOVERLAY_RANGE_FLAG_IS_SPARSE ) != 0 )
+		if( read_count < (ssize_t) internal_handle->cow_file->block_size )
 		{
 			if( memory_set(
-			     internal_handle->cow_block_data,
+			     &( ( internal_handle->cow_block_data )[ read_count ] ),
 			     0,
-			     internal_handle->cow_file->block_size ) == NULL )
+			     internal_handle->cow_file->block_size - read_count ) == NULL )
 			{
 				libcerror_error_set(
 				 error,
 				 LIBCERROR_ERROR_DOMAIN_MEMORY,
 				 LIBCERROR_MEMORY_ERROR_SET_FAILED,
-				 "%s: unable to clear COW block.",
+				 "%s: unable to clear read COW block data.",
 				 function );
 
 				return( -1 );
 			}
 		}
-		else
-		{
-			file_offset  = range->data_file_offset + ( internal_handle->current_offset - range->start_offset );
-			file_offset /= internal_handle->cow_file->block_size;
-			file_offset *= internal_handle->cow_file->block_size;
-
-			read_count = libbfio_pool_read_buffer_at_offset(
-			              internal_handle->data_file_io_pool,
-			              range->data_file_index,
-			              internal_handle->cow_block_data,
-			              internal_handle->cow_file->block_size,
-			              file_offset,
-			              error );
-
-			if( read_count != (ssize_t) internal_handle->cow_file->block_size )
-			{
-				libcerror_error_set(
-				 error,
-				 LIBCERROR_ERROR_DOMAIN_IO,
-				 LIBCERROR_IO_ERROR_READ_FAILED,
-				 "%s: unable to read data of size: %" PRIzd " from layer: %d at offset %" PRIi64 " (0x%08" PRIx64 ").",
-				 function,
-				 read_size,
-				 range->data_file_index,
-				 file_offset,
-				 file_offset );
-
-				return( -1 );
-			}
-		}
-		cow_block_offset = (size_t) ( internal_handle->current_offset - cow_block_start_offset );
+		cow_block_offset = (size_t) ( current_offset - cow_block_start_offset );
 
 		read_size = buffer_size - buffer_offset;
 
-		if( (int64_t) read_size > ( cow_block_end_offset - internal_handle->current_offset ) )
+		if( (int64_t) read_size > ( cow_block_end_offset - current_offset ) )
 		{
-			read_size = (size_t) ( cow_block_end_offset - internal_handle->current_offset );
+			read_size = (size_t) ( cow_block_end_offset - current_offset );
 		}
 		if( memory_copy(
 		     &( ( internal_handle->cow_block_data )[ cow_block_offset ] ),
@@ -2808,11 +2773,15 @@ ssize_t libbfoverlay_internal_handle_write_buffer(
 
 			return( -1 );
 		}
+		buffer_offset += read_size;
+
 		if( result == 0 )
 		{
 			if( libbfoverlay_cow_file_allocate_block_for_offset(
 			     internal_handle->cow_file,
-			     internal_handle->current_offset,
+			     current_offset,
+			     internal_handle->data_file_io_pool,
+			     internal_handle->cow_file_io_pool_entry,
 			     &file_offset,
 			     error ) != 1 )
 			{
@@ -2822,8 +2791,8 @@ ssize_t libbfoverlay_internal_handle_write_buffer(
 				 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
 				 "%s: unable to retrieve range at offset %" PRIi64 " (0x%08" PRIx64 ").",
 				 function,
-				 internal_handle->current_offset,
-				 internal_handle->current_offset );
+				 current_offset,
+				 current_offset );
 
 				return( -1 );
 			}

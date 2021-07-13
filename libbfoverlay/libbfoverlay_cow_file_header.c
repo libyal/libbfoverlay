@@ -221,7 +221,7 @@ int libbfoverlay_cow_file_header_read_data(
 	if( libcnotify_verbose != 0 )
 	{
 		libcnotify_printf(
-		 "%s: signature\t\t\t\t\t: %s\x00\x00\x00\n",
+		 "%s: signature\t\t\t\t\t: %s\\x00\\x00\\x00\n",
 		 function,
 		 ( (bfoverlay_cow_file_header_t *) data )->signature );
 

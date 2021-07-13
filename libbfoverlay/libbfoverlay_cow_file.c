@@ -304,27 +304,9 @@ int libbfoverlay_cow_file_open(
 
 		goto on_error;
 	}
-	if( file_size == 0 )
+	if( file_size > 0 )
 	{
-		if( libbfoverlay_cow_allocation_table_write_file_io_pool(
-		     cow_file->allocation_table,
-		     file_io_pool,
-		     file_io_pool_entry,
-		     (off64_t) sizeof( bfoverlay_cow_file_header_t ),
-		     error ) != 1 )
-		{
-			libcerror_error_set(
-			 error,
-			 LIBCERROR_ERROR_DOMAIN_IO,
-			 LIBCERROR_IO_ERROR_WRITE_FAILED,
-			 "%s: unable to write COW allocation table.",
-			 function );
-
-			goto on_error;
-		}
-	}
-	else
-	{
+/* TODO move into libbfoverlay_cow_allocation_table_get_block_number_by_index ? */
 		if( libbfoverlay_cow_allocation_table_read_file_io_pool(
 		     cow_file->allocation_table,
 		     file_io_pool,
@@ -388,22 +370,6 @@ int libbfoverlay_cow_file_close(
 
 		return( -1 );
 	}
-	if( libbfoverlay_cow_allocation_table_write_file_io_pool(
-	     cow_file->allocation_table,
-	     file_io_pool,
-	     file_io_pool_entry,
-	     (off64_t) sizeof( bfoverlay_cow_file_header_t ),
-	     error ) != 1 )
-	{
-		libcerror_error_set(
-		 error,
-		 LIBCERROR_ERROR_DOMAIN_IO,
-		 LIBCERROR_IO_ERROR_WRITE_FAILED,
-		 "%s: unable to write COW allocation table.",
-		 function );
-
-		return( -1 );
-	}
 	if( libbfoverlay_cow_allocation_table_free(
 	     &( cow_file->allocation_table ),
 	     error ) != 1 )
@@ -426,6 +392,8 @@ int libbfoverlay_cow_file_close(
 int libbfoverlay_cow_file_allocate_block_for_offset(
      libbfoverlay_cow_file_t *cow_file,
      off64_t offset,
+     libbfio_pool_t *file_io_pool,
+     int file_io_pool_entry,
      off64_t *file_offset,
      libcerror_error_t **error )
 {
@@ -500,6 +468,8 @@ int libbfoverlay_cow_file_allocate_block_for_offset(
 
 	if( libbfoverlay_cow_allocation_table_set_block_number_by_index(
 	     cow_file->allocation_table,
+	     file_io_pool,
+	     file_io_pool_entry,
 	     table_index,
 	     cow_file->last_data_block_number,
 	     error ) != 1 )
@@ -514,8 +484,6 @@ int libbfoverlay_cow_file_allocate_block_for_offset(
 
 		return( -1 );
 	}
-/* TODO write entry in allocation table */
-
 	*file_offset = cow_file->last_data_block_number * cow_file->block_size;
 
 	return( 1 );

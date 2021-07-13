@@ -493,7 +493,8 @@ int mount_file_entry_get_file_mode(
 	}
 	else
 	{
-		*file_mode = S_IFREG | 0444;
+/* TODO determine if file is writable */
+		*file_mode = S_IFREG | 0644;
 	}
 	return( 1 );
 }
@@ -878,6 +879,53 @@ ssize_t mount_file_entry_read_buffer_at_offset(
 		return( -1 );
 	}
 	return( read_count );
+}
+
+/* Writes data at a specific offset
+ * Returns the number of bytes written or -1 on error
+ */
+ssize_t mount_file_entry_write_buffer_at_offset(
+         mount_file_entry_t *file_entry,
+         const void *buffer,
+         size_t buffer_size,
+         off64_t offset,
+         libcerror_error_t **error )
+{
+	static char *function = "mount_file_entry_write_buffer_at_offset";
+	ssize_t write_count   = 0;
+
+	if( file_entry == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
+		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
+		 "%s: invalid file entry.",
+		 function );
+
+		return( -1 );
+	}
+	write_count = libbfoverlay_handle_write_buffer_at_offset(
+	               file_entry->bfoverlay_handle,
+	               buffer,
+	               buffer_size,
+	               offset,
+	               error );
+
+	if( write_count < 0 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_IO,
+		 LIBCERROR_IO_ERROR_READ_FAILED,
+		 "%s: unable to write buffer at offset: %" PRIi64 " (0x%08" PRIx64 ") from handle.",
+		 function,
+		 offset,
+		 offset );
+
+		return( -1 );
+	}
+	return( write_count );
 }
 
 /* Retrieves the size

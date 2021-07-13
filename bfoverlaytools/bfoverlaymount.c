@@ -350,6 +350,7 @@ int main( int argc, char * const argv[] )
 	}
 	bfoverlaymount_fuse_operations.open       = &mount_fuse_open;
 	bfoverlaymount_fuse_operations.read       = &mount_fuse_read;
+	bfoverlaymount_fuse_operations.write      = &mount_fuse_write;
 	bfoverlaymount_fuse_operations.release    = &mount_fuse_release;
 	bfoverlaymount_fuse_operations.opendir    = &mount_fuse_opendir;
 	bfoverlaymount_fuse_operations.readdir    = &mount_fuse_readdir;
@@ -462,7 +463,7 @@ int main( int argc, char * const argv[] )
 	bfoverlaymount_dokan_operations.Cleanup              = NULL;
 	bfoverlaymount_dokan_operations.CloseFile            = &mount_dokan_CloseFile;
 	bfoverlaymount_dokan_operations.ReadFile             = &mount_dokan_ReadFile;
-	bfoverlaymount_dokan_operations.WriteFile            = NULL;
+	bfoverlaymount_dokan_operations.WriteFile            = &mount_dokan_WriteFile;
 	bfoverlaymount_dokan_operations.FlushFileBuffers     = NULL;
 	bfoverlaymount_dokan_operations.GetFileInformation   = &mount_dokan_GetFileInformation;
 	bfoverlaymount_dokan_operations.FindFiles            = &mount_dokan_FindFiles;
@@ -487,7 +488,7 @@ int main( int argc, char * const argv[] )
 	bfoverlaymount_dokan_operations.Cleanup              = NULL;
 	bfoverlaymount_dokan_operations.CloseFile            = &mount_dokan_CloseFile;
 	bfoverlaymount_dokan_operations.ReadFile             = &mount_dokan_ReadFile;
-	bfoverlaymount_dokan_operations.WriteFile            = NULL;
+	bfoverlaymount_dokan_operations.WriteFile            = &mount_dokan_WriteFile;
 	bfoverlaymount_dokan_operations.FlushFileBuffers     = NULL;
 	bfoverlaymount_dokan_operations.GetFileInformation   = &mount_dokan_GetFileInformation;
 	bfoverlaymount_dokan_operations.FindFiles            = &mount_dokan_FindFiles;

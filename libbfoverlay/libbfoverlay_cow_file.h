@@ -82,6 +82,8 @@ int libbfoverlay_cow_file_close(
 int libbfoverlay_cow_file_allocate_block_for_offset(
      libbfoverlay_cow_file_t *cow_file,
      off64_t offset,
+     libbfio_pool_t *file_io_pool,
+     int file_io_pool_entry,
      off64_t *file_offset,
      libcerror_error_t **error );
 

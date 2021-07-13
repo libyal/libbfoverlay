@@ -92,6 +92,14 @@ int __stdcall mount_dokan_ReadFile(
                LONGLONG offset,
                DOKAN_FILE_INFO *file_info );
 
+int __stdcall mount_dokan_WriteFile(
+               const wchar_t *path,
+               const void *buffer,
+               DWORD number_of_bytes_to_write,
+               DWORD *number_of_bytes_written,
+               LONGLONG offset,
+               DOKAN_FILE_INFO *file_info );
+
 int __stdcall mount_dokan_FindFiles(
                const wchar_t *path,
                PFillFindData fill_find_data,
