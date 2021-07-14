@@ -36,17 +36,18 @@ typedef struct libbfoverlay_cow_allocation_table libbfoverlay_cow_allocation_tab
 
 struct libbfoverlay_cow_allocation_table
 {
+	/* Offset of the level 1 allocation table
+	 */
+	off64_t l1_allocation_table_offset;
+
 	/* Number of blocks
 	 */
 	uint64_t number_of_blocks;
-
-	/* Block table
-	 */
-	uint64_t *block_table;
 };
 
 int libbfoverlay_cow_allocation_table_initialize(
      libbfoverlay_cow_allocation_table_t **cow_allocation_table,
+     off64_t l1_allocation_table_offset,
      uint64_t number_of_blocks,
      libcerror_error_t **error );
 
@@ -54,21 +55,10 @@ int libbfoverlay_cow_allocation_table_free(
      libbfoverlay_cow_allocation_table_t **cow_allocation_table,
      libcerror_error_t **error );
 
-int libbfoverlay_cow_allocation_table_read_data(
-     libbfoverlay_cow_allocation_table_t *cow_allocation_table,
-     const uint8_t *data,
-     size_t data_size,
-     libcerror_error_t **error );
-
-int libbfoverlay_cow_allocation_table_read_file_io_pool(
+int libbfoverlay_cow_allocation_table_get_block_number_by_index(
      libbfoverlay_cow_allocation_table_t *cow_allocation_table,
      libbfio_pool_t *file_io_pool,
      int file_io_pool_entry,
-     off64_t file_offset,
-     libcerror_error_t **error );
-
-int libbfoverlay_cow_allocation_table_get_block_number_by_index(
-     libbfoverlay_cow_allocation_table_t *cow_allocation_table,
      int table_index,
      uint64_t *block_number,
      libcerror_error_t **error );

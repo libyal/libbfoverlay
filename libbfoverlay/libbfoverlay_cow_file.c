@@ -26,6 +26,7 @@
 #include "libbfoverlay_cow_allocation_table.h"
 #include "libbfoverlay_cow_file.h"
 #include "libbfoverlay_cow_file_header.h"
+#include "libbfoverlay_definitions.h"
 #include "libbfoverlay_libbfio.h"
 #include "libbfoverlay_libcerror.h"
 
@@ -136,6 +137,22 @@ int libbfoverlay_cow_file_free(
 	}
 	if( *cow_file != NULL )
 	{
+		if( ( *cow_file )->allocation_table != NULL )
+		{
+			if( libbfoverlay_cow_file_close(
+			     *cow_file,
+			     error ) != 0 )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_IO,
+				 LIBCERROR_IO_ERROR_CLOSE_FAILED,
+				 "%s: unable to close COW file.",
+				 function );
+
+				result = -1;
+			}
+		}
 		memory_free(
 		 *cow_file );
 
@@ -292,6 +309,7 @@ int libbfoverlay_cow_file_open(
 	}
 	if( libbfoverlay_cow_allocation_table_initialize(
 	     &( cow_file->allocation_table ),
+	     64,
 	     number_of_blocks,
 	     error ) != 1 )
 	{
@@ -303,26 +321,6 @@ int libbfoverlay_cow_file_open(
 		 function );
 
 		goto on_error;
-	}
-	if( file_size > 0 )
-	{
-/* TODO move into libbfoverlay_cow_allocation_table_get_block_number_by_index ? */
-		if( libbfoverlay_cow_allocation_table_read_file_io_pool(
-		     cow_file->allocation_table,
-		     file_io_pool,
-		     file_io_pool_entry,
-		     (off64_t) sizeof( bfoverlay_cow_file_header_t ),
-		     error ) != 1 )
-		{
-			libcerror_error_set(
-			 error,
-			 LIBCERROR_ERROR_DOMAIN_IO,
-			 LIBCERROR_IO_ERROR_READ_FAILED,
-			 "%s: unable to read COW allocation table.",
-			 function );
-
-			goto on_error;
-		}
 	}
 	first_data_block_offset = (off64_t) sizeof( bfoverlay_cow_file_header_t ) + ( (off64_t) number_of_blocks * 8 );
 	first_data_block_offset = (off64_t) sizeof( bfoverlay_cow_file_header_t ) + ( (off64_t) number_of_blocks * 8 );
@@ -353,8 +351,6 @@ on_error:
  */
 int libbfoverlay_cow_file_close(
      libbfoverlay_cow_file_t *cow_file,
-     libbfio_pool_t *file_io_pool,
-     int file_io_pool_entry,
      libcerror_error_t **error )
 {
 	static char *function = "libbfoverlay_cow_file_close";
@@ -391,9 +387,9 @@ int libbfoverlay_cow_file_close(
  */
 int libbfoverlay_cow_file_allocate_block_for_offset(
      libbfoverlay_cow_file_t *cow_file,
-     off64_t offset,
      libbfio_pool_t *file_io_pool,
      int file_io_pool_entry,
+     off64_t offset,
      off64_t *file_offset,
      libcerror_error_t **error )
 {
@@ -438,6 +434,8 @@ int libbfoverlay_cow_file_allocate_block_for_offset(
 
 	if( libbfoverlay_cow_allocation_table_get_block_number_by_index(
 	     cow_file->allocation_table,
+	     file_io_pool,
+	     file_io_pool_entry,
 	     table_index,
 	     &block_number,
 	     error ) != 1 )
@@ -452,7 +450,7 @@ int libbfoverlay_cow_file_allocate_block_for_offset(
 
 		return( -1 );
 	}
-	if( block_number != 0 )
+	if( block_number != LIBBFOVERLAY_COW_BLOCK_NUMBER_NOT_SET )
 	{
 		libcerror_error_set(
 		 error,
@@ -494,6 +492,8 @@ int libbfoverlay_cow_file_allocate_block_for_offset(
  */
 int libbfoverlay_cow_file_get_block_at_offset(
      libbfoverlay_cow_file_t *cow_file,
+     libbfio_pool_t *file_io_pool,
+     int file_io_pool_entry,
      off64_t offset,
      off64_t *range_start_offset,
      off64_t *range_end_offset,
@@ -563,6 +563,8 @@ int libbfoverlay_cow_file_get_block_at_offset(
 
 	if( libbfoverlay_cow_allocation_table_get_block_number_by_index(
 	     cow_file->allocation_table,
+	     file_io_pool,
+	     file_io_pool_entry,
 	     table_index,
 	     &block_number,
 	     error ) != 1 )
@@ -577,7 +579,7 @@ int libbfoverlay_cow_file_get_block_at_offset(
 
 		return( -1 );
 	}
-	if( ( block_number != 0 )
+	if( ( block_number != LIBBFOVERLAY_COW_BLOCK_NUMBER_NOT_SET )
 	 && ( ( block_number < cow_file->first_data_block_number )
 	  ||  ( block_number > cow_file->last_data_block_number ) ) )
 	{
@@ -596,7 +598,7 @@ int libbfoverlay_cow_file_get_block_at_offset(
 	*range_start_offset = (off64_t) table_index * cow_file->block_size;
 	*range_end_offset   = ( (off64_t) table_index * cow_file->block_size ) + cow_file->block_size;
 
-	if( block_number == 0 )
+	if( block_number == LIBBFOVERLAY_COW_BLOCK_NUMBER_NOT_SET )
 	{
 		return( 0 );
 	}

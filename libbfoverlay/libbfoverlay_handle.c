@@ -1492,38 +1492,6 @@ int libbfoverlay_handle_close(
 		return( -1 );
 	}
 #endif
-	if( internal_handle->cow_file != NULL )
-	{
-		if( libbfoverlay_cow_file_close(
-		     internal_handle->cow_file,
-		     internal_handle->data_file_io_pool,
-		     internal_handle->cow_file_io_pool_entry,
-		     error ) != 0 )
-		{
-			libcerror_error_set(
-			 error,
-			 LIBCERROR_ERROR_DOMAIN_IO,
-			 LIBCERROR_IO_ERROR_CLOSE_FAILED,
-			 "%s: unable to close COW file.",
-			 function );
-
-			result = -1;
-		}
-		if( libbfoverlay_cow_file_free(
-		     &( internal_handle->cow_file ),
-		     error ) != 1 )
-		{
-			libcerror_error_set(
-			 error,
-			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
-			 LIBCERROR_RUNTIME_ERROR_FINALIZE_FAILED,
-			 "%s: unable to free COW file.",
-			 function );
-
-			result = -1;
-		}
-		internal_handle->cow_file_io_pool_entry = -1;
-	}
 	if( internal_handle->file_io_handle_opened_in_library != 0 )
 	{
 		if( libbfio_handle_close(
@@ -1608,6 +1576,23 @@ int libbfoverlay_handle_close(
 
 			result = -1;
 		}
+	}
+	if( internal_handle->cow_file != NULL )
+	{
+		if( libbfoverlay_cow_file_free(
+		     &( internal_handle->cow_file ),
+		     error ) != 1 )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+			 LIBCERROR_RUNTIME_ERROR_FINALIZE_FAILED,
+			 "%s: unable to free COW file.",
+			 function );
+
+			result = -1;
+		}
+		internal_handle->cow_file_io_pool_entry = -1;
 	}
 	if( internal_handle->cow_block_data != NULL )
 	{
@@ -2252,6 +2237,8 @@ ssize_t libbfoverlay_internal_handle_read_buffer(
 		{
 			result = libbfoverlay_cow_file_get_block_at_offset(
 			          internal_handle->cow_file,
+			          internal_handle->data_file_io_pool,
+			          internal_handle->cow_file_io_pool_entry,
 			          internal_handle->current_offset,
 			          &cow_block_start_offset,
 			          &cow_block_end_offset,
@@ -2696,6 +2683,8 @@ ssize_t libbfoverlay_internal_handle_write_buffer(
 	{
 		result = libbfoverlay_cow_file_get_block_at_offset(
 		          internal_handle->cow_file,
+		          internal_handle->data_file_io_pool,
+		          internal_handle->cow_file_io_pool_entry,
 		          internal_handle->current_offset,
 		          &cow_block_start_offset,
 		          &cow_block_end_offset,
@@ -2779,9 +2768,9 @@ ssize_t libbfoverlay_internal_handle_write_buffer(
 		{
 			if( libbfoverlay_cow_file_allocate_block_for_offset(
 			     internal_handle->cow_file,
-			     current_offset,
 			     internal_handle->data_file_io_pool,
 			     internal_handle->cow_file_io_pool_entry,
+			     current_offset,
 			     &file_offset,
 			     error ) != 1 )
 			{

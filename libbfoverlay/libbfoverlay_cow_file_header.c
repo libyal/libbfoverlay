@@ -386,7 +386,7 @@ int libbfoverlay_cow_file_header_write_file_io_pool(
 	if( memory_set(
 	     &( cow_file_header_data[ 32 ] ),
 	     0,
-	     32 ) == NULL )
+	     sizeof( bfoverlay_cow_file_header_t ) - 32 ) == NULL )
 	{
 		libcerror_error_set(
 		 error,

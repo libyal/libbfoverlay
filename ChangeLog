@@ -6,6 +6,7 @@ TODO:
 ** add support to read and cache in memory for slow media?
 
 * COW file format
+** fix read of allocation table entry if table does not exist in COW file
 ** add support for write append/truncate
 ** test read and write functions
 ** add multi-level allocation table to reduce overhead of size of table in file

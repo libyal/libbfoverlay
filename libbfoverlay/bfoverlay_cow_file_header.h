@@ -57,6 +57,11 @@ struct bfoverlay_cow_file_header
 	 * Consists of 16 bytes
 	 */
 	uint8_t padding[ 16 ];
+
+	/* Level 1 block allocation table
+	 * Consists of 448 bytes
+	 */
+	uint8_t l1_allocation_table[ 448 ];
 };
 
 #if defined( __cplusplus )

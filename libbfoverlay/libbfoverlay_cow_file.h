@@ -75,20 +75,20 @@ int libbfoverlay_cow_file_open(
 
 int libbfoverlay_cow_file_close(
      libbfoverlay_cow_file_t *cow_file,
-     libbfio_pool_t *file_io_pool,
-     int file_io_pool_entry,
      libcerror_error_t **error );
 
 int libbfoverlay_cow_file_allocate_block_for_offset(
      libbfoverlay_cow_file_t *cow_file,
-     off64_t offset,
      libbfio_pool_t *file_io_pool,
      int file_io_pool_entry,
+     off64_t offset,
      off64_t *file_offset,
      libcerror_error_t **error );
 
 int libbfoverlay_cow_file_get_block_at_offset(
      libbfoverlay_cow_file_t *cow_file,
+     libbfio_pool_t *file_io_pool,
+     int file_io_pool_entry,
      off64_t offset,
      off64_t *range_start_offset,
      off64_t *range_end_offset,
