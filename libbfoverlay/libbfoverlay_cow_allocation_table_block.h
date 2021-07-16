@@ -1,5 +1,5 @@
 /*
- * Copy-on-write (COW) allocation table functions
+ * Copy-on-write (COW) allocation table block functions
  *
  * Copyright (C) 2020-2021, Joachim Metz <joachim.metz@gmail.com>
  *
@@ -19,8 +19,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#if !defined( _LIBBFOVERLAY_COW_ALLOCATION_TABLE_H )
-#define _LIBBFOVERLAY_COW_ALLOCATION_TABLE_H
+#if !defined( _LIBBFOVERLAY_COW_ALLOCATION_TABLE_BLOCK_H )
+#define _LIBBFOVERLAY_COW_ALLOCATION_TABLE_BLOCK_H
 
 #include <common.h>
 #include <types.h>
@@ -32,48 +32,46 @@
 extern "C" {
 #endif
 
-typedef struct libbfoverlay_cow_allocation_table libbfoverlay_cow_allocation_table_t;
+typedef struct libbfoverlay_cow_allocation_table_block libbfoverlay_cow_allocation_table_block_t;
 
-struct libbfoverlay_cow_allocation_table
+struct libbfoverlay_cow_allocation_table_block
 {
-	/* Offset of the level 1 allocation table
+	/* Number of entries
 	 */
-	off64_t l1_allocation_table_offset;
-
-	/* Number of blocks
-	 */
-	uint64_t number_of_blocks;
+	int number_of_entries;
 };
 
-int libbfoverlay_cow_allocation_table_initialize(
-     libbfoverlay_cow_allocation_table_t **cow_allocation_table,
-     off64_t l1_allocation_table_offset,
-     uint64_t number_of_blocks,
+int libbfoverlay_cow_allocation_table_block_initialize(
+     libbfoverlay_cow_allocation_table_block_t **cow_allocation_table_block,
+     size32_t block_size,
      libcerror_error_t **error );
 
-int libbfoverlay_cow_allocation_table_free(
-     libbfoverlay_cow_allocation_table_t **cow_allocation_table,
+int libbfoverlay_cow_allocation_table_block_free(
+     libbfoverlay_cow_allocation_table_block_t **cow_allocation_table_block,
      libcerror_error_t **error );
 
-int libbfoverlay_cow_allocation_table_get_block_number_by_index(
-     libbfoverlay_cow_allocation_table_t *cow_allocation_table,
+int libbfoverlay_cow_allocation_table_block_get_block_number_by_index(
+     libbfoverlay_cow_allocation_table_block_t *cow_allocation_table_block,
      libbfio_pool_t *file_io_pool,
      int file_io_pool_entry,
-     int table_index,
+     off64_t file_offset,
+     int entry_index,
      uint64_t *block_number,
      libcerror_error_t **error );
 
-int libbfoverlay_cow_allocation_table_set_block_number_by_index(
-     libbfoverlay_cow_allocation_table_t *cow_allocation_table,
+int libbfoverlay_cow_allocation_table_block_set_block_number_by_index(
+     libbfoverlay_cow_allocation_table_block_t *cow_allocation_table_block,
      libbfio_pool_t *file_io_pool,
      int file_io_pool_entry,
-     int table_index,
+     off64_t file_offset,
+     int entry_index,
      uint64_t block_number,
+     uint8_t write_header,
      libcerror_error_t **error );
 
 #if defined( __cplusplus )
 }
 #endif
 
-#endif /* !defined( _LIBBFOVERLAY_COW_ALLOCATION_TABLE_H ) */
+#endif /* !defined( _LIBBFOVERLAY_COW_ALLOCATION_TABLE_BLOCK_H ) */
 

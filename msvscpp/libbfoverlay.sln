@@ -11,7 +11,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bfoverlaymount", "bfoverlay
 		{40BAE5FF-CA58-4171-9DA8-15C2F94755B4} = {40BAE5FF-CA58-4171-9DA8-15C2F94755B4}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bfoverlay_test_cow_allocation_table", "bfoverlay_test_cow_allocation_table\bfoverlay_test_cow_allocation_table.vcproj", "{6128EAE4-89FD-426A-A766-BCC4EEEC60A9}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bfoverlay_test_cow_allocation_table_block", "bfoverlay_test_cow_allocation_table_block\bfoverlay_test_cow_allocation_table_block.vcproj", "{C2BE0E8F-43FB-4027-8425-96961FDD5150}"
 	ProjectSection(ProjectDependencies) = postProject
 		{4E43F406-1CD4-4041-9F66-69EE2E7DDC81} = {4E43F406-1CD4-4041-9F66-69EE2E7DDC81}
 		{AB0CD3DE-494D-4BC7-A7B9-331BD44CB7A1} = {AB0CD3DE-494D-4BC7-A7B9-331BD44CB7A1}
@@ -219,10 +219,10 @@ Global
 		{FAC21E0F-60CA-412E-BC08-14DE58E51B6C}.Release|Win32.Build.0 = Release|Win32
 		{FAC21E0F-60CA-412E-BC08-14DE58E51B6C}.VSDebug|Win32.ActiveCfg = VSDebug|Win32
 		{FAC21E0F-60CA-412E-BC08-14DE58E51B6C}.VSDebug|Win32.Build.0 = VSDebug|Win32
-		{6128EAE4-89FD-426A-A766-BCC4EEEC60A9}.Release|Win32.ActiveCfg = Release|Win32
-		{6128EAE4-89FD-426A-A766-BCC4EEEC60A9}.Release|Win32.Build.0 = Release|Win32
-		{6128EAE4-89FD-426A-A766-BCC4EEEC60A9}.VSDebug|Win32.ActiveCfg = VSDebug|Win32
-		{6128EAE4-89FD-426A-A766-BCC4EEEC60A9}.VSDebug|Win32.Build.0 = VSDebug|Win32
+		{C2BE0E8F-43FB-4027-8425-96961FDD5150}.Release|Win32.ActiveCfg = Release|Win32
+		{C2BE0E8F-43FB-4027-8425-96961FDD5150}.Release|Win32.Build.0 = Release|Win32
+		{C2BE0E8F-43FB-4027-8425-96961FDD5150}.VSDebug|Win32.ActiveCfg = VSDebug|Win32
+		{C2BE0E8F-43FB-4027-8425-96961FDD5150}.VSDebug|Win32.Build.0 = VSDebug|Win32
 		{F1A02EB4-89AE-425B-B3FB-A1972D770DBD}.Release|Win32.ActiveCfg = Release|Win32
 		{F1A02EB4-89AE-425B-B3FB-A1972D770DBD}.Release|Win32.Build.0 = Release|Win32
 		{F1A02EB4-89AE-425B-B3FB-A1972D770DBD}.VSDebug|Win32.ActiveCfg = VSDebug|Win32

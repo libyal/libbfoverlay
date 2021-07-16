@@ -36,10 +36,6 @@ typedef struct libbfoverlay_cow_file_header libbfoverlay_cow_file_header_t;
 
 struct libbfoverlay_cow_file_header
 {
-	/* The format version
-	 */
-	uint32_t format_version;
-
 	/* The block size
 	 */
 	uint32_t block_size;

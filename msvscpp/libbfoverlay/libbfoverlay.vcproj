@@ -174,7 +174,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\libbfoverlay\libbfoverlay_cow_allocation_table.c"
+				RelativePath="..\..\libbfoverlay\libbfoverlay_cow_allocation_table_block.c"
 				>
 			</File>
 			<File
@@ -220,6 +220,10 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath="..\..\libbfoverlay\bfoverlay_cow_allocation_table_block.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\libbfoverlay\bfoverlay_cow_file_header.h"
 				>
 			</File>
@@ -228,7 +232,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\libbfoverlay\libbfoverlay_cow_allocation_table.h"
+				RelativePath="..\..\libbfoverlay\libbfoverlay_cow_allocation_table_block.h"
 				>
 			</File>
 			<File

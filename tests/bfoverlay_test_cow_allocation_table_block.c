@@ -1,5 +1,5 @@
 /*
- * Library cow_allocation_table type test program
+ * Library cow_allocation_table_block type test program
  *
  * Copyright (C) 2020-2021, Joachim Metz <joachim.metz@gmail.com>
  *
@@ -36,9 +36,9 @@
 #include "bfoverlay_test_memory.h"
 #include "bfoverlay_test_unused.h"
 
-#include "../libbfoverlay/libbfoverlay_cow_allocation_table.h"
+#include "../libbfoverlay/libbfoverlay_cow_allocation_table_block.h"
 
-uint8_t bfoverlay_test_cow_allocation_table_data1[ 64 ] = {
+uint8_t bfoverlay_test_cow_allocation_table_block_data1[ 64 ] = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -46,28 +46,27 @@ uint8_t bfoverlay_test_cow_allocation_table_data1[ 64 ] = {
 
 #if defined( __GNUC__ ) && !defined( LIBBFOVERLAY_DLL_IMPORT )
 
-/* Tests the libbfoverlay_cow_allocation_table_initialize function
+/* Tests the libbfoverlay_cow_allocation_table_block_initialize function
  * Returns 1 if successful or 0 if not
  */
-int bfoverlay_test_cow_allocation_table_initialize(
+int bfoverlay_test_cow_allocation_table_block_initialize(
      void )
 {
-	libbfoverlay_cow_allocation_table_t *cow_allocation_table = NULL;
-	libcerror_error_t *error                                  = NULL;
-	int result                                                = 0;
+	libbfoverlay_cow_allocation_table_block_t *cow_allocation_table_block = NULL;
+	libcerror_error_t *error                                              = NULL;
+	int result                                                            = 0;
 
 #if defined( HAVE_BFOVERLAY_TEST_MEMORY )
-	int number_of_malloc_fail_tests                           = 1;
-	int number_of_memset_fail_tests                           = 1;
-	int test_number                                           = 0;
+	int number_of_malloc_fail_tests                                       = 1;
+	int number_of_memset_fail_tests                                       = 1;
+	int test_number                                                       = 0;
 #endif
 
 	/* Test regular cases
 	 */
-	result = libbfoverlay_cow_allocation_table_initialize(
-	          &cow_allocation_table,
-	          64,
-	          8,
+	result = libbfoverlay_cow_allocation_table_block_initialize(
+	          &cow_allocation_table_block,
+	          4096,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -76,15 +75,15 @@ int bfoverlay_test_cow_allocation_table_initialize(
 	 1 );
 
 	BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
-	 "cow_allocation_table",
-	 cow_allocation_table );
+	 "cow_allocation_table_block",
+	 cow_allocation_table_block );
 
 	BFOVERLAY_TEST_ASSERT_IS_NULL(
 	 "error",
 	 error );
 
-	result = libbfoverlay_cow_allocation_table_free(
-	          &cow_allocation_table,
+	result = libbfoverlay_cow_allocation_table_block_free(
+	          &cow_allocation_table_block,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -93,8 +92,8 @@ int bfoverlay_test_cow_allocation_table_initialize(
 	 1 );
 
 	BFOVERLAY_TEST_ASSERT_IS_NULL(
-	 "cow_allocation_table",
-	 cow_allocation_table );
+	 "cow_allocation_table_block",
+	 cow_allocation_table_block );
 
 	BFOVERLAY_TEST_ASSERT_IS_NULL(
 	 "error",
@@ -102,10 +101,9 @@ int bfoverlay_test_cow_allocation_table_initialize(
 
 	/* Test error cases
 	 */
-	result = libbfoverlay_cow_allocation_table_initialize(
+	result = libbfoverlay_cow_allocation_table_block_initialize(
 	          NULL,
-	          64,
-	          8,
+	          4096,
 	          &error );
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
@@ -120,15 +118,14 @@ int bfoverlay_test_cow_allocation_table_initialize(
 	libcerror_error_free(
 	 &error );
 
-	cow_allocation_table = (libbfoverlay_cow_allocation_table_t *) 0x12345678UL;
+	cow_allocation_table_block = (libbfoverlay_cow_allocation_table_block_t *) 0x12345678UL;
 
-	result = libbfoverlay_cow_allocation_table_initialize(
-	          &cow_allocation_table,
-	          64,
-	          8,
+	result = libbfoverlay_cow_allocation_table_block_initialize(
+	          &cow_allocation_table_block,
+	          4096,
 	          &error );
 
-	cow_allocation_table = NULL;
+	cow_allocation_table_block = NULL;
 
 	BFOVERLAY_TEST_ASSERT_EQUAL_INT(
 	 "result",
@@ -148,24 +145,23 @@ int bfoverlay_test_cow_allocation_table_initialize(
 	     test_number < number_of_malloc_fail_tests;
 	     test_number++ )
 	{
-		/* Test libbfoverlay_cow_allocation_table_initialize with malloc failing
+		/* Test libbfoverlay_cow_allocation_table_block_initialize with malloc failing
 		 */
 		bfoverlay_test_malloc_attempts_before_fail = test_number;
 
-		result = libbfoverlay_cow_allocation_table_initialize(
-		          &cow_allocation_table,
-		          64,
-		          8,
+		result = libbfoverlay_cow_allocation_table_block_initialize(
+		          &cow_allocation_table_block,
+		          4096,
 		          &error );
 
 		if( bfoverlay_test_malloc_attempts_before_fail != -1 )
 		{
 			bfoverlay_test_malloc_attempts_before_fail = -1;
 
-			if( cow_allocation_table != NULL )
+			if( cow_allocation_table_block != NULL )
 			{
-				libbfoverlay_cow_allocation_table_free(
-				 &cow_allocation_table,
+				libbfoverlay_cow_allocation_table_block_free(
+				 &cow_allocation_table_block,
 				 NULL );
 			}
 		}
@@ -177,8 +173,8 @@ int bfoverlay_test_cow_allocation_table_initialize(
 			 -1 );
 
 			BFOVERLAY_TEST_ASSERT_IS_NULL(
-			 "cow_allocation_table",
-			 cow_allocation_table );
+			 "cow_allocation_table_block",
+			 cow_allocation_table_block );
 
 			BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
 			 "error",
@@ -192,24 +188,23 @@ int bfoverlay_test_cow_allocation_table_initialize(
 	     test_number < number_of_memset_fail_tests;
 	     test_number++ )
 	{
-		/* Test libbfoverlay_cow_allocation_table_initialize with memset failing
+		/* Test libbfoverlay_cow_allocation_table_block_initialize with memset failing
 		 */
 		bfoverlay_test_memset_attempts_before_fail = test_number;
 
-		result = libbfoverlay_cow_allocation_table_initialize(
-		          &cow_allocation_table,
-		          64,
-		          8,
+		result = libbfoverlay_cow_allocation_table_block_initialize(
+		          &cow_allocation_table_block,
+		          4096,
 		          &error );
 
 		if( bfoverlay_test_memset_attempts_before_fail != -1 )
 		{
 			bfoverlay_test_memset_attempts_before_fail = -1;
 
-			if( cow_allocation_table != NULL )
+			if( cow_allocation_table_block != NULL )
 			{
-				libbfoverlay_cow_allocation_table_free(
-				 &cow_allocation_table,
+				libbfoverlay_cow_allocation_table_block_free(
+				 &cow_allocation_table_block,
 				 NULL );
 			}
 		}
@@ -221,8 +216,8 @@ int bfoverlay_test_cow_allocation_table_initialize(
 			 -1 );
 
 			BFOVERLAY_TEST_ASSERT_IS_NULL(
-			 "cow_allocation_table",
-			 cow_allocation_table );
+			 "cow_allocation_table_block",
+			 cow_allocation_table_block );
 
 			BFOVERLAY_TEST_ASSERT_IS_NOT_NULL(
 			 "error",
@@ -242,19 +237,19 @@ on_error:
 		libcerror_error_free(
 		 &error );
 	}
-	if( cow_allocation_table != NULL )
+	if( cow_allocation_table_block != NULL )
 	{
-		libbfoverlay_cow_allocation_table_free(
-		 &cow_allocation_table,
+		libbfoverlay_cow_allocation_table_block_free(
+		 &cow_allocation_table_block,
 		 NULL );
 	}
 	return( 0 );
 }
 
-/* Tests the libbfoverlay_cow_allocation_table_free function
+/* Tests the libbfoverlay_cow_allocation_table_block_free function
  * Returns 1 if successful or 0 if not
  */
-int bfoverlay_test_cow_allocation_table_free(
+int bfoverlay_test_cow_allocation_table_block_free(
      void )
 {
 	libcerror_error_t *error = NULL;
@@ -262,7 +257,7 @@ int bfoverlay_test_cow_allocation_table_free(
 
 	/* Test error cases
 	 */
-	result = libbfoverlay_cow_allocation_table_free(
+	result = libbfoverlay_cow_allocation_table_block_free(
 	          NULL,
 	          &error );
 
@@ -309,16 +304,16 @@ int main(
 #if defined( __GNUC__ ) && !defined( LIBBFOVERLAY_DLL_IMPORT )
 
 	BFOVERLAY_TEST_RUN(
-	 "libbfoverlay_cow_allocation_table_initialize",
-	 bfoverlay_test_cow_allocation_table_initialize );
+	 "libbfoverlay_cow_allocation_table_block_initialize",
+	 bfoverlay_test_cow_allocation_table_block_initialize );
 
 	BFOVERLAY_TEST_RUN(
-	 "libbfoverlay_cow_allocation_table_free",
-	 bfoverlay_test_cow_allocation_table_free );
+	 "libbfoverlay_cow_allocation_table_block_free",
+	 bfoverlay_test_cow_allocation_table_block_free );
 
-	/* TODO add tests for libbfoverlay_cow_allocation_table_get_block_number_by_index */
+	/* TODO add tests for libbfoverlay_cow_allocation_table_block_get_block_number_by_index */
 
-	/* TODO add tests for libbfoverlay_cow_allocation_table_set_block_number_by_index */
+	/* TODO add tests for libbfoverlay_cow_allocation_table_block_set_block_number_by_index */
 
 #endif /* defined( __GNUC__ ) && !defined( LIBBFOVERLAY_DLL_IMPORT ) */
 

@@ -11,6 +11,7 @@ TODO:
 ** test read and write functions
 ** add multi-level allocation table to reduce overhead of size of table in file
 ** merge COW allocation table into range array?
+** use vshadow block tree approach for allocation table?
 
 * tests
 ** complete handle tests

@@ -18,10 +18,11 @@ AM_CPPFLAGS = \
 lib_LTLIBRARIES = libbfoverlay.la
 
 libbfoverlay_la_SOURCES = \
+	bfoverlay_cow_allocation_table_block.h \
 	bfoverlay_cow_file_header.h \
 	libbfoverlay.c \
 	libbfoverlay_codepage.h \
-	libbfoverlay_cow_allocation_table.c libbfoverlay_cow_allocation_table.h \
+	libbfoverlay_cow_allocation_table_block.c libbfoverlay_cow_allocation_table_block.h \
 	libbfoverlay_cow_file.c libbfoverlay_cow_file.h \
 	libbfoverlay_cow_file_header.c libbfoverlay_cow_file_header.h \
 	libbfoverlay_definitions.h \

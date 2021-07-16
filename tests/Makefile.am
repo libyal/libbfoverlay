@@ -31,7 +31,7 @@ EXTRA_DIST = \
 	$(check_SCRIPTS)
 
 check_PROGRAMS = \
-	bfoverlay_test_cow_allocation_table \
+	bfoverlay_test_cow_allocation_table_block \
 	bfoverlay_test_cow_file \
 	bfoverlay_test_cow_file_header \
 	bfoverlay_test_descriptor_file \
@@ -44,8 +44,8 @@ check_PROGRAMS = \
 	bfoverlay_test_tools_output \
 	bfoverlay_test_tools_signal
 
-bfoverlay_test_cow_allocation_table_SOURCES = \
-	bfoverlay_test_cow_allocation_table.c \
+bfoverlay_test_cow_allocation_table_block_SOURCES = \
+	bfoverlay_test_cow_allocation_table_block.c \
 	bfoverlay_test_functions.c bfoverlay_test_functions.h \
 	bfoverlay_test_libbfio.h \
 	bfoverlay_test_libcerror.h \
@@ -54,7 +54,7 @@ bfoverlay_test_cow_allocation_table_SOURCES = \
 	bfoverlay_test_memory.c bfoverlay_test_memory.h \
 	bfoverlay_test_unused.h
 
-bfoverlay_test_cow_allocation_table_LDADD = \
+bfoverlay_test_cow_allocation_table_block_LDADD = \
 	@LIBBFIO_LIBADD@ \
 	@LIBCPATH_LIBADD@ \
 	@LIBCFILE_LIBADD@ \

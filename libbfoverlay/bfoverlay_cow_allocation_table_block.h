@@ -1,5 +1,5 @@
 /*
- * File header of a basic file overlay copy-on-write (COW) file
+ * Allocation table block of a basic file overlay copy-on-write (COW) file
  *
  * Copyright (C) 2020-2021, Joachim Metz <joachim.metz@gmail.com>
  *
@@ -19,8 +19,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#if !defined( _BFOVERLAY_COW_FILE_HEADER_H )
-#define _BFOVERLAY_COW_FILE_HEADER_H
+#if !defined( _BFOVERLAY_COW_ALLOCATION_TABLE_BLOCK_H )
+#define _BFOVERLAY_COW_ALLOCATION_TABLE_BLOCK_H
 
 #include <common.h>
 #include <types.h>
@@ -29,9 +29,9 @@
 extern "C" {
 #endif
 
-typedef struct bfoverlay_cow_file_header bfoverlay_cow_file_header_t;
+typedef struct bfoverlay_cow_allocation_table_block_header bfoverlay_cow_allocation_table_block_header_t;
 
-struct bfoverlay_cow_file_header
+struct bfoverlay_cow_allocation_table_block_header
 {
 	/* Signature
 	 * Consists of 12 bytes
@@ -43,25 +43,15 @@ struct bfoverlay_cow_file_header
 	 */
 	uint8_t format_version[ 4 ];
 
-	/* Data size
-	 * Consists of 8 bytes
-	 */
-	uint8_t data_size[ 8 ];
-
-	/* Block size
-	 * Consists of 4 bytes
-	 */
-	uint8_t block_size[ 4 ];
-
 	/* Padding (unused)
-	 * Consists of 4 bytes
+	 * Consists of 16 bytes
 	 */
-	uint8_t padding[ 4 ];
+	uint8_t padding[ 16 ];
 };
 
 #if defined( __cplusplus )
 }
 #endif
 
-#endif /* !defined( _BFOVERLAY_COW_FILE_HEADER_H ) */
+#endif /* !defined( _BFOVERLAY_COW_ALLOCATION_TABLE_BLOCK_H ) */
 

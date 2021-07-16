@@ -23,7 +23,7 @@
 #include <memory.h>
 #include <types.h>
 
-#include "libbfoverlay_cow_allocation_table.h"
+#include "libbfoverlay_cow_allocation_table_block.h"
 #include "libbfoverlay_cow_file.h"
 #include "libbfoverlay_cow_file_header.h"
 #include "libbfoverlay_definitions.h"
@@ -137,7 +137,7 @@ int libbfoverlay_cow_file_free(
 	}
 	if( *cow_file != NULL )
 	{
-		if( ( *cow_file )->allocation_table != NULL )
+		if( ( *cow_file )->allocation_table_block != NULL )
 		{
 			if( libbfoverlay_cow_file_close(
 			     *cow_file,
@@ -187,13 +187,13 @@ int libbfoverlay_cow_file_open(
 
 		return( -1 );
 	}
-	if( cow_file->allocation_table != NULL )
+	if( cow_file->allocation_table_block != NULL )
 	{
 		libcerror_error_set(
 		 error,
 		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
 		 LIBCERROR_RUNTIME_ERROR_VALUE_ALREADY_SET,
-		 "%s: invalid COW file - allocation table value already set.",
+		 "%s: invalid COW file - allocation table block value already set.",
 		 function );
 
 		return( -1 );
@@ -277,7 +277,8 @@ int libbfoverlay_cow_file_open(
 
 		return( -1 );
 	}
-	if( file_header->block_size != cow_file->block_size )
+	if( ( (size_t) file_header->block_size < sizeof( bfoverlay_cow_file_header_t ) )
+	 || ( file_header->block_size != cow_file->block_size ) )
 	{
 		libcerror_error_set(
 		 error,
@@ -307,26 +308,25 @@ int libbfoverlay_cow_file_open(
 
 		goto on_error;
 	}
-	if( libbfoverlay_cow_allocation_table_initialize(
-	     &( cow_file->allocation_table ),
-	     64,
-	     number_of_blocks,
+	if( libbfoverlay_cow_allocation_table_block_initialize(
+	     &( cow_file->allocation_table_block ),
+	     cow_file->block_size,
 	     error ) != 1 )
 	{
 		libcerror_error_set(
 		 error,
 		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
 		 LIBCERROR_RUNTIME_ERROR_INITIALIZE_FAILED,
-		 "%s: unable to create COW allocation table.",
+		 "%s: unable to create COW allocation table block.",
 		 function );
 
 		goto on_error;
 	}
 	first_data_block_offset = (off64_t) sizeof( bfoverlay_cow_file_header_t ) + ( (off64_t) number_of_blocks * 8 );
-	first_data_block_offset = (off64_t) sizeof( bfoverlay_cow_file_header_t ) + ( (off64_t) number_of_blocks * 8 );
 
-	cow_file->first_data_block_number = (uint64_t) first_data_block_offset / cow_file->block_size;
-	cow_file->last_data_block_number  = (uint64_t) file_size / cow_file->block_size;
+	cow_file->first_data_block_number    = (uint64_t) first_data_block_offset / cow_file->block_size;
+	cow_file->last_data_block_number     = (uint64_t) file_size / cow_file->block_size;
+	cow_file->l1_allocation_table_offset = (off64_t) sizeof( bfoverlay_cow_file_header_t );
 
 	return( 1 );
 
@@ -337,10 +337,10 @@ on_error:
 		 &file_header,
 		 NULL );
 	}
-	if( cow_file->allocation_table != NULL )
+	if( cow_file->allocation_table_block != NULL )
 	{
-		libbfoverlay_cow_allocation_table_free(
-		 &( cow_file->allocation_table ),
+		libbfoverlay_cow_allocation_table_block_free(
+		 &( cow_file->allocation_table_block ),
 		 NULL );
 	}
 	return( -1 );
@@ -366,15 +366,15 @@ int libbfoverlay_cow_file_close(
 
 		return( -1 );
 	}
-	if( libbfoverlay_cow_allocation_table_free(
-	     &( cow_file->allocation_table ),
+	if( libbfoverlay_cow_allocation_table_block_free(
+	     &( cow_file->allocation_table_block ),
 	     error ) != 1 )
 	{
 		libcerror_error_set(
 		 error,
 		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
 		 LIBCERROR_RUNTIME_ERROR_FINALIZE_FAILED,
-		 "%s: unable to free COW allocation table.",
+		 "%s: unable to free COW allocation table block.",
 		 function );
 
 		return( -1 );
@@ -393,9 +393,17 @@ int libbfoverlay_cow_file_allocate_block_for_offset(
      off64_t *file_offset,
      libcerror_error_t **error )
 {
-	static char *function = "libbfoverlay_cow_file_allocate_block_for_offset";
-	off64_t table_index   = 0;
-	uint64_t block_number = 0;
+	uint8_t cow_allocation_table_entry_data[ 8 ];
+
+	static char *function     = "libbfoverlay_cow_file_allocate_block_for_offset";
+	size64_t entry_range_size = 0;
+	ssize_t read_count        = 0;
+	ssize_t write_count       = 0;
+	off64_t safe_file_offset  = 0;
+	uint64_t block_number     = 0;
+	uint8_t write_header      = 0;
+	int depth                 = 0;
+	int entry_index           = 0;
 
 	if( cow_file == NULL )
 	{
@@ -404,6 +412,17 @@ int libbfoverlay_cow_file_allocate_block_for_offset(
 		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
 		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
 		 "%s: invalid COW file.",
+		 function );
+
+		return( -1 );
+	}
+	if( cow_file->allocation_table_block == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
+		 "%s: invalid COW file - missing allocation table block.",
 		 function );
 
 		return( -1 );
@@ -430,57 +449,140 @@ int libbfoverlay_cow_file_allocate_block_for_offset(
 
 		return( -1 );
 	}
-	table_index = offset / cow_file->block_size;
+/* TODO store entry_range_size in allocation table block header ? */
+	entry_range_size = cow_file->block_size;
 
-	if( libbfoverlay_cow_allocation_table_get_block_number_by_index(
-	     cow_file->allocation_table,
-	     file_io_pool,
-	     file_io_pool_entry,
-	     table_index,
-	     &block_number,
-	     error ) != 1 )
+	while( entry_range_size < ( cow_file->data_size / cow_file->allocation_table_block->number_of_entries ) )
+	{
+		entry_range_size *= cow_file->allocation_table_block->number_of_entries;
+	}
+	entry_index = offset / entry_range_size;
+
+	safe_file_offset = cow_file->l1_allocation_table_offset + ( entry_index * 8 );
+
+	read_count = libbfio_pool_read_buffer_at_offset(
+	             file_io_pool,
+	             file_io_pool_entry,
+	             cow_allocation_table_entry_data,
+	             8,
+	             safe_file_offset,
+	             error );
+
+	if( read_count != (ssize_t) 8 )
 	{
 		libcerror_error_set(
 		 error,
-		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
-		 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
-		 "%s: unable to retrieve COW block number: %" PRIi64 ".",
+		 LIBCERROR_ERROR_DOMAIN_IO,
+		 LIBCERROR_IO_ERROR_READ_FAILED,
+		 "%s: unable to read level 1 COW allocation table entry: %d at offset: %" PRIi64 " (0x%08" PRIx64 ").",
 		 function,
-		 table_index );
+		 entry_index,
+		 safe_file_offset,
+		 safe_file_offset );
 
 		return( -1 );
 	}
-	if( block_number != LIBBFOVERLAY_COW_BLOCK_NUMBER_NOT_SET )
-	{
-		libcerror_error_set(
-		 error,
-		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
-		 LIBCERROR_RUNTIME_ERROR_VALUE_ALREADY_SET,
-		 "%s: invalid COW block number: %" PRIu64 " value already set.",
-		 function,
-		 table_index );
+	byte_stream_copy_to_uint64_big_endian(
+	 cow_allocation_table_entry_data,
+	 block_number );
 
-		return( -1 );
+	if( block_number == LIBBFOVERLAY_COW_BLOCK_NUMBER_NOT_SET )
+	{
+		cow_file->last_data_block_number += 1;
+
+		block_number = cow_file->last_data_block_number;
+
+		byte_stream_copy_from_uint64_big_endian(
+		 cow_allocation_table_entry_data,
+		 block_number );
+
+		write_count = libbfio_pool_write_buffer_at_offset(
+		               file_io_pool,
+		               file_io_pool_entry,
+		               cow_allocation_table_entry_data,
+		               8,
+		               safe_file_offset,
+		               error );
+
+		if( write_count != (ssize_t) 8 )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_IO,
+			 LIBCERROR_IO_ERROR_WRITE_FAILED,
+			 "%s: unable to write COW level 1 allocation table entry: %d at offset: %" PRIi64 " (0x%08" PRIx64 ").",
+			 function,
+			 entry_index,
+			 safe_file_offset,
+			 safe_file_offset );
+
+			return( -1 );
+		}
 	}
-	cow_file->last_data_block_number += 1;
+	depth = 2;
 
-	if( libbfoverlay_cow_allocation_table_set_block_number_by_index(
-	     cow_file->allocation_table,
-	     file_io_pool,
-	     file_io_pool_entry,
-	     table_index,
-	     cow_file->last_data_block_number,
-	     error ) != 1 )
+	while( entry_range_size > cow_file->block_size )
 	{
-		libcerror_error_set(
-		 error,
-		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
-		 LIBCERROR_RUNTIME_ERROR_SET_FAILED,
-		 "%s: unable to set COW block number: %" PRIi64 ".",
-		 function,
-		 table_index );
+		safe_file_offset = block_number * cow_file->block_size;
 
-		return( -1 );
+		offset           -= entry_range_size;
+		entry_range_size /= cow_file->block_size;
+		entry_index       = offset / entry_range_size;
+
+		if( libbfoverlay_cow_allocation_table_block_get_block_number_by_index(
+		     cow_file->allocation_table_block,
+		     file_io_pool,
+		     file_io_pool_entry,
+		     safe_file_offset,
+		     entry_index,
+		     &block_number,
+		     error ) != 1 )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+			 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
+			 "%s: unable to retrieve level %d COW allocation table entry: %d at offset %" PRIi64 " (0x%08" PRIx64 ").",
+			 function,
+			 depth,
+			 entry_index,
+			 safe_file_offset,
+			 safe_file_offset );
+
+			return( -1 );
+		}
+		if( block_number == LIBBFOVERLAY_COW_BLOCK_NUMBER_NOT_SET )
+		{
+			cow_file->last_data_block_number += 1;
+
+			block_number = cow_file->last_data_block_number;
+
+			if( libbfoverlay_cow_allocation_table_block_set_block_number_by_index(
+			     cow_file->allocation_table_block,
+			     file_io_pool,
+			     file_io_pool_entry,
+			     safe_file_offset,
+			     entry_index,
+			     block_number,
+			     write_header,
+			     error ) != 1 )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+				 LIBCERROR_RUNTIME_ERROR_SET_FAILED,
+				 "%s: unable to set level %d COW allocation table entry: %d at offset %" PRIi64 " (0x%08" PRIx64 ").",
+				 function,
+				 depth,
+				 entry_index,
+				 safe_file_offset,
+				 safe_file_offset );
+
+				return( -1 );
+			}
+			write_header = 1;
+		}
+		depth++;
 	}
 	*file_offset = cow_file->last_data_block_number * cow_file->block_size;
 
@@ -500,9 +602,16 @@ int libbfoverlay_cow_file_get_block_at_offset(
      off64_t *file_offset,
      libcerror_error_t **error )
 {
-	static char *function = "libbfoverlay_cow_file_get_block_at_offset";
-	off64_t table_index   = 0;
-	uint64_t block_number = 0;
+	uint8_t cow_allocation_table_entry_data[ 8 ];
+
+	static char *function     = "libbfoverlay_cow_file_get_block_at_offset";
+	size64_t entry_range_size = 0;
+	ssize_t read_count        = 0;
+	off64_t safe_file_offset  = 0;
+	off64_t table_index       = 0;
+	uint64_t block_number     = 0;
+	int depth                 = 0;
+	int entry_index           = 0;
 
 	if( cow_file == NULL )
 	{
@@ -561,24 +670,43 @@ int libbfoverlay_cow_file_get_block_at_offset(
 	}
 	table_index = offset / cow_file->block_size;
 
-	if( libbfoverlay_cow_allocation_table_get_block_number_by_index(
-	     cow_file->allocation_table,
-	     file_io_pool,
-	     file_io_pool_entry,
-	     table_index,
-	     &block_number,
-	     error ) != 1 )
+/* TODO store entry_range_size in allocation table block header ? */
+	entry_range_size = cow_file->block_size;
+
+	while( entry_range_size < ( cow_file->data_size / cow_file->allocation_table_block->number_of_entries ) )
+	{
+		entry_range_size *= cow_file->allocation_table_block->number_of_entries;
+	}
+	entry_index = offset / entry_range_size;
+
+	safe_file_offset = cow_file->l1_allocation_table_offset + ( entry_index * 8 );
+
+	read_count = libbfio_pool_read_buffer_at_offset(
+	             file_io_pool,
+	             file_io_pool_entry,
+	             cow_allocation_table_entry_data,
+	             8,
+	             safe_file_offset,
+	             error );
+
+	if( read_count != (ssize_t) 8 )
 	{
 		libcerror_error_set(
 		 error,
-		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
-		 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
-		 "%s: unable to retrieve COW block number: %" PRIi64 ".",
+		 LIBCERROR_ERROR_DOMAIN_IO,
+		 LIBCERROR_IO_ERROR_READ_FAILED,
+		 "%s: unable to read level 1 COW allocation table entry: %d at offset: %" PRIi64 " (0x%08" PRIx64 ").",
 		 function,
-		 table_index );
+		 entry_index,
+		 safe_file_offset,
+		 safe_file_offset );
 
 		return( -1 );
 	}
+	byte_stream_copy_to_uint64_big_endian(
+	 cow_allocation_table_entry_data,
+	 block_number );
+
 	if( ( block_number != LIBBFOVERLAY_COW_BLOCK_NUMBER_NOT_SET )
 	 && ( ( block_number < cow_file->first_data_block_number )
 	  ||  ( block_number > cow_file->last_data_block_number ) ) )
@@ -587,12 +715,64 @@ int libbfoverlay_cow_file_get_block_at_offset(
 		 error,
 		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
 		 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
-		 "%s: invalid COW block number: %" PRIu64 " value: %" PRIu64 " out of bounds.",
+		 "%s: invalid level 1 COW allocation table entry: %d block number value: %" PRIu64 " out of bounds.",
 		 function,
-		 table_index,
+		 entry_index,
 		 block_number );
 
 		return( -1 );
+	}
+	depth = 2;
+
+	while( entry_range_size > cow_file->block_size )
+	{
+		safe_file_offset = block_number * cow_file->block_size;
+
+		offset           -= entry_range_size;
+		entry_range_size /= cow_file->block_size;
+		entry_index       = offset / entry_range_size;
+
+		if( libbfoverlay_cow_allocation_table_block_get_block_number_by_index(
+		     cow_file->allocation_table_block,
+		     file_io_pool,
+		     file_io_pool_entry,
+		     safe_file_offset,
+		     entry_index,
+		     &block_number,
+		     error ) != 1 )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+			 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
+			 "%s: unable to retrieve level %d COW allocation table entry: %d at offset %" PRIi64 " (0x%08" PRIx64 ").",
+			 function,
+			 depth,
+			 entry_index,
+			 safe_file_offset,
+			 safe_file_offset );
+
+			return( -1 );
+		}
+		if( ( block_number != LIBBFOVERLAY_COW_BLOCK_NUMBER_NOT_SET )
+		 && ( ( block_number < cow_file->first_data_block_number )
+		  ||  ( block_number > cow_file->last_data_block_number ) ) )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+			 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+			 "%s: invalid level %d COW allocation table entry: %d at offset %" PRIi64 " (0x%08" PRIx64 ") block number value: %" PRIu64 " out of bounds.",
+			 function,
+			 depth,
+			 entry_index,
+			 safe_file_offset,
+			 safe_file_offset,
+			 block_number );
+
+			return( -1 );
+		}
+		depth++;
 	}
 	*file_offset        = block_number * cow_file->block_size;
 	*range_start_offset = (off64_t) table_index * cow_file->block_size;

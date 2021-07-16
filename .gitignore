@@ -126,7 +126,7 @@ stamp-h[1-9]
 /bfoverlaytools/*.exe
 /bfoverlaytools/bfoverlaymount
 /tests/*.exe
-/tests/bfoverlay_test_cow_allocation_table
+/tests/bfoverlay_test_cow_allocation_table_block
 /tests/bfoverlay_test_cow_file
 /tests/bfoverlay_test_cow_file_header
 /tests/bfoverlay_test_descriptor_file

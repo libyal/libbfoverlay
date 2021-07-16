@@ -143,7 +143,8 @@ int libbfoverlay_cow_file_header_read_data(
      size_t data_size,
      libcerror_error_t **error )
 {
-	static char *function = "libbfoverlay_cow_file_header_read_data";
+	static char *function   = "libbfoverlay_cow_file_header_read_data";
+	uint32_t format_version = 0;
 
 	if( cow_file_header == NULL )
 	{
@@ -193,8 +194,8 @@ int libbfoverlay_cow_file_header_read_data(
 #endif
 	if( memory_compare(
 	     ( (bfoverlay_cow_file_header_t *) data )->signature,
-	     "# basic file overlay COW file\x00\x00\x00",
-	     32 ) != 0 )
+	     "# BFO-COW-FH",
+	     12 ) != 0 )
 	{
 		libcerror_error_set(
 		 error,
@@ -207,7 +208,7 @@ int libbfoverlay_cow_file_header_read_data(
 	}
 	byte_stream_copy_to_uint32_big_endian(
 	 ( (bfoverlay_cow_file_header_t *) data )->format_version,
-	 cow_file_header->format_version );
+	 format_version );
 
 	byte_stream_copy_to_uint32_big_endian(
 	 ( (bfoverlay_cow_file_header_t *) data )->block_size,
@@ -221,36 +222,36 @@ int libbfoverlay_cow_file_header_read_data(
 	if( libcnotify_verbose != 0 )
 	{
 		libcnotify_printf(
-		 "%s: signature\t\t\t\t\t: %s\\x00\\x00\\x00\n",
+		 "%s: signature\t\t\t: %s\n",
 		 function,
 		 ( (bfoverlay_cow_file_header_t *) data )->signature );
 
 		libcnotify_printf(
-		 "%s: format version\t\t\t\t: %" PRIu32 "\n",
+		 "%s: format version\t\t\t: %" PRIu32 "\n",
 		 function,
-		 cow_file_header->format_version );
+		 format_version );
 
 		libcnotify_printf(
-		 "%s: block size\t\t\t\t: %" PRIu32 "\n",
-		 function,
-		 cow_file_header->block_size );
-
-		libcnotify_printf(
-		 "%s: data size\t\t\t\t: %" PRIu64 "\n",
+		 "%s: data size\t\t\t: %" PRIu64 "\n",
 		 function,
 		 cow_file_header->data_size );
+
+		libcnotify_printf(
+		 "%s: block size\t\t\t: %" PRIu32 "\n",
+		 function,
+		 cow_file_header->block_size );
 
 		libcnotify_printf(
 		 "%s: padding:\n",
 		 function );
 		libcnotify_print_data(
 		 ( (bfoverlay_cow_file_header_t *) data )->padding,
-		 16,
+		 4,
 		 0 );
 	}
 #endif /* defined( HAVE_DEBUG_OUTPUT ) */
 
-	if( cow_file_header->format_version != 20210710 )
+	if( format_version != 20210716 )
 	{
 		libcerror_error_set(
 		 error,
@@ -258,7 +259,7 @@ int libbfoverlay_cow_file_header_read_data(
 		 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
 		 "%s: unsupported format version: %" PRIu32 ".",
 		 function,
-		 cow_file_header->format_version );
+		 format_version );
 
 		return( -1 );
 	}
@@ -350,6 +351,7 @@ int libbfoverlay_cow_file_header_write_file_io_pool(
      off64_t file_offset,
      libcerror_error_t **error )
 {
+	uint8_t cow_allocation_table_entry_data[ 8 ];
 	uint8_t cow_file_header_data[ sizeof( bfoverlay_cow_file_header_t ) ];
 
 	static char *function = "libbfoverlay_cow_file_header_write_file_io_pool";
@@ -366,13 +368,12 @@ int libbfoverlay_cow_file_header_write_file_io_pool(
 
 		return( -1 );
 	}
-	cow_file_header->format_version = 20210710;
-	cow_file_header->block_size     = 4096;
+	cow_file_header->block_size = 4096;
 
 	if( memory_copy(
 	     cow_file_header_data,
-	     "# basic file overlay COW file\x00\x00\x00",
-	     32 ) == NULL )
+	     "# BFO-COW-FH",
+	     12 ) == NULL )
 	{
 		libcerror_error_set(
 		 error,
@@ -384,9 +385,9 @@ int libbfoverlay_cow_file_header_write_file_io_pool(
 		return( -1 );
 	}
 	if( memory_set(
-	     &( cow_file_header_data[ 32 ] ),
+	     &( cow_file_header_data[ 12 ] ),
 	     0,
-	     sizeof( bfoverlay_cow_file_header_t ) - 32 ) == NULL )
+	     sizeof( bfoverlay_cow_file_header_t ) - 12 ) == NULL )
 	{
 		libcerror_error_set(
 		 error,
@@ -399,15 +400,15 @@ int libbfoverlay_cow_file_header_write_file_io_pool(
 	}
 	byte_stream_copy_from_uint32_big_endian(
 	 ( (bfoverlay_cow_file_header_t *) cow_file_header_data )->format_version,
-	 cow_file_header->format_version );
-
-	byte_stream_copy_from_uint32_big_endian(
-	 ( (bfoverlay_cow_file_header_t *) cow_file_header_data )->block_size,
-	 cow_file_header->block_size );
+	 20210716 );
 
 	byte_stream_copy_from_uint64_big_endian(
 	 ( (bfoverlay_cow_file_header_t *) cow_file_header_data )->data_size,
 	 cow_file_header->data_size );
+
+	byte_stream_copy_from_uint32_big_endian(
+	 ( (bfoverlay_cow_file_header_t *) cow_file_header_data )->block_size,
+	 cow_file_header->block_size );
 
 #if defined( HAVE_DEBUG_OUTPUT )
 	if( libcnotify_verbose != 0 )
@@ -437,6 +438,41 @@ int libbfoverlay_cow_file_header_write_file_io_pool(
 		 function,
 		 file_offset,
 		 file_offset );
+
+		return( -1 );
+	}
+	if( memory_set(
+	     cow_allocation_table_entry_data,
+	     0,
+	     8 ) == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_MEMORY,
+		 LIBCERROR_MEMORY_ERROR_SET_FAILED,
+		 "%s: unable to clear COW allocation table entry data.",
+		 function );
+
+		return( -1 );
+	}
+	write_count = libbfio_pool_write_buffer_at_offset(
+	              file_io_pool,
+	              file_io_pool_entry,
+	              cow_allocation_table_entry_data,
+	              8,
+	              cow_file_header->block_size - 8,
+	              error );
+
+	if( write_count != (ssize_t) 8 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_IO,
+		 LIBCERROR_IO_ERROR_WRITE_FAILED,
+		 "%s: unable to write COW allocation table data at offset: %" PRIi64 " (0x%08" PRIx64 ").",
+		 function,
+		 (off64_t) ( file_offset + sizeof( bfoverlay_cow_file_header_t ) ),
+		 (off64_t) ( file_offset + sizeof( bfoverlay_cow_file_header_t ) ) );
 
 		return( -1 );
 	}

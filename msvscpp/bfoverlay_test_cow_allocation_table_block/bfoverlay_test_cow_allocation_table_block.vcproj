@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9,00"
-	Name="bfoverlay_test_cow_allocation_table"
-	ProjectGUID="{6128EAE4-89FD-426A-A766-BCC4EEEC60A9}"
-	RootNamespace="bfoverlay_test_cow_allocation_table"
+	Name="bfoverlay_test_cow_allocation_table_block"
+	ProjectGUID="{C2BE0E8F-43FB-4027-8425-96961FDD5150}"
+	RootNamespace="bfoverlay_test_cow_allocation_table_block"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="131072"
 	>
@@ -176,7 +176,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\tests\bfoverlay_test_cow_allocation_table.c"
+				RelativePath="..\..\tests\bfoverlay_test_cow_allocation_table_block.c"
 				>
 			</File>
 			<File

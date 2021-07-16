@@ -25,7 +25,7 @@
 #include <common.h>
 #include <types.h>
 
-#include "libbfoverlay_cow_allocation_table.h"
+#include "libbfoverlay_cow_allocation_table_block.h"
 #include "libbfoverlay_libbfio.h"
 #include "libbfoverlay_libcerror.h"
 
@@ -45,17 +45,25 @@ struct libbfoverlay_cow_file
 	 */
 	size32_t block_size;
 
-	/* Allocation table
+	/* Number of blocks
 	 */
-	libbfoverlay_cow_allocation_table_t *allocation_table;
+	uint64_t number_of_blocks;
 
-	/* First block number used to store data
+	/* First block number used to store data or metadata
 	 */
 	uint64_t first_data_block_number;
 
-	/* Last block number used to store data
+	/* Last block number used to store data or metadata
 	 */
 	uint64_t last_data_block_number;
+
+	/* Offset of the level 1 allocation table
+	 */
+	off64_t l1_allocation_table_offset;
+
+	/* Allocation table block
+	 */
+	libbfoverlay_cow_allocation_table_block_t *allocation_table_block;
 };
 
 int libbfoverlay_cow_file_initialize(
