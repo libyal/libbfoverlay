@@ -348,6 +348,7 @@ int main( int argc, char * const argv[] )
 
 		goto on_error;
 	}
+	bfoverlaymount_fuse_operations.truncate   = &mount_fuse_truncate;
 	bfoverlaymount_fuse_operations.open       = &mount_fuse_open;
 	bfoverlaymount_fuse_operations.read       = &mount_fuse_read;
 	bfoverlaymount_fuse_operations.write      = &mount_fuse_write;

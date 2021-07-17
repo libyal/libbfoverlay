@@ -7,7 +7,6 @@ TODO:
 
 * COW file format
 ** add base block number to allocation table block header?
-** support data size shrink (truncate)
 ** test read and write functions
 ** use vshadow block tree approach as runtime cache of allocation table?
 

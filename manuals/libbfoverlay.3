@@ -1,4 +1,4 @@
-.Dd July 10, 2021
+.Dd July 17, 2021
 .Dt libbfoverlay 3
 .Os libbfoverlay
 .Sh NAME
@@ -60,6 +60,8 @@ Handle functions
 .Fn libbfoverlay_handle_write_buffer_at_offset "libbfoverlay_handle_t *handle" "const uint8_t *buffer" "size_t buffer_size" "off64_t offset" "libbfoverlay_error_t **error"
 .Ft off64_t
 .Fn libbfoverlay_handle_seek_offset "libbfoverlay_handle_t *handle" "off64_t offset" "int whence" "libbfoverlay_error_t **error"
+.Ft int
+.Fn libbfoverlay_handle_resize "libbfoverlay_handle_t *handle" "size64_t size" "libbfoverlay_error_t **error"
 .Ft int
 .Fn libbfoverlay_handle_get_offset "libbfoverlay_handle_t *handle" "off64_t *offset" "libbfoverlay_error_t **error"
 .Ft int

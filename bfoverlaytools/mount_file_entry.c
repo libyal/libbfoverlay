@@ -928,6 +928,44 @@ ssize_t mount_file_entry_write_buffer_at_offset(
 	return( write_count );
 }
 
+/* Resizes a file entry
+ * Returns 1 if successful or -1 on error
+ */
+int mount_file_entry_resize(
+     mount_file_entry_t *file_entry,
+     size64_t size,
+     libcerror_error_t **error )
+{
+	static char *function = "mount_file_entry_resize";
+
+	if( file_entry == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
+		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
+		 "%s: invalid file entry.",
+		 function );
+
+		return( -1 );
+	}
+	if( libbfoverlay_handle_resize(
+	     file_entry->bfoverlay_handle,
+	     size,
+	     error ) != 1 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_IO,
+		 LIBCERROR_IO_ERROR_GENERIC,
+		 "%s: unable to resize handle.",
+		 function );
+
+		return( -1 );
+	}
+	return( 1 );
+}
+
 /* Retrieves the size
  * Returns 1 if successful or -1 on error
  */

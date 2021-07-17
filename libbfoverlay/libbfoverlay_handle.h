@@ -242,6 +242,12 @@ off64_t libbfoverlay_handle_seek_offset(
          libcerror_error_t **error );
 
 LIBBFOVERLAY_EXTERN \
+int libbfoverlay_handle_resize(
+     libbfoverlay_handle_t *handle,
+     size64_t size,
+     libcerror_error_t **error );
+
+LIBBFOVERLAY_EXTERN \
 int libbfoverlay_handle_get_offset(
      libbfoverlay_handle_t *handle,
      off64_t *offset,

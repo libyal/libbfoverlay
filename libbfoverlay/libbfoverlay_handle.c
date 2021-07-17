@@ -1213,6 +1213,7 @@ int libbfoverlay_internal_handle_open_data_files(
 
 			goto on_error;
 		}
+		internal_handle->size = internal_handle->cow_file->data_size;
 	}
 	if( libbfoverlay_internal_handle_open_determine_ranges(
 	     internal_handle,
@@ -2177,6 +2178,17 @@ ssize_t libbfoverlay_internal_handle_read_buffer(
 
 		return( -1 );
 	}
+	if( internal_handle->current_offset < 0 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+		 "%s: invalid handle - current offset value out of bounds.",
+		 function );
+
+		return( -1 );
+	}
 	if( buffer == NULL )
 	{
 		libcerror_error_set(
@@ -2206,24 +2218,6 @@ ssize_t libbfoverlay_internal_handle_read_buffer(
 	if( (size64_t) buffer_size > ( internal_handle->size - internal_handle->current_offset ) )
 	{
 		buffer_size = (size_t) ( internal_handle->size - internal_handle->current_offset );
-	}
-	if( libbfoverlay_internal_handle_get_range_at_offset(
-	     internal_handle,
-	     internal_handle->current_offset,
-	     &range_index,
-	     &range,
-	     error ) != 1 )
-	{
-		libcerror_error_set(
-		 error,
-		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
-		 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
-		 "%s: unable to retrieve range at offset %" PRIi64 " (0x%08" PRIx64 ").",
-		 function,
-		 internal_handle->current_offset,
-		 internal_handle->current_offset );
-
-		return( -1 );
 	}
 	while( buffer_offset < buffer_size )
 	{
@@ -2307,6 +2301,61 @@ ssize_t libbfoverlay_internal_handle_read_buffer(
 		}
 		else
 		{
+			if( range == NULL )
+			{
+				if( libbfoverlay_internal_handle_get_range_at_offset(
+			             internal_handle,
+			             internal_handle->current_offset,
+			             &range_index,
+			             &range,
+			             error ) != 1 )
+				{
+					libcerror_error_set(
+					 error,
+					 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+					 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
+					 "%s: unable to retrieve range at offset %" PRIi64 " (0x%08" PRIx64 ").",
+					 function,
+					 internal_handle->current_offset,
+					 internal_handle->current_offset );
+
+					return( -1 );
+				}
+			}
+			else
+			{
+/* TODO preserve current range and index ? */
+				range_index++;
+
+				if( libcdata_array_get_entry_by_index(
+				     internal_handle->ranges_array,
+				     range_index,
+				     (intptr_t **) &range,
+				     error ) != 1 )
+				{
+					libcerror_error_set(
+					 error,
+					 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+					 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
+					 "%s: unable to retrieve range: %d.",
+					 function,
+					 range_index );
+
+					return( -1 );
+				}
+			}
+			if( range == NULL )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+				 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
+				 "%s: missing range: %d.",
+				 function,
+				 range_index );
+
+				return( -1 );
+			}
 			if( (int64_t) read_size > ( range->end_offset - internal_handle->current_offset ) )
 			{
 				read_size = (size_t) ( range->end_offset - internal_handle->current_offset );
@@ -2364,40 +2413,6 @@ ssize_t libbfoverlay_internal_handle_read_buffer(
 		if( buffer_offset >= buffer_size )
 		{
 			break;
-		}
-		if( internal_handle->current_offset >= range->end_offset )
-		{
-/* TODO preserve current range and index */
-			range_index++;
-
-			if( libcdata_array_get_entry_by_index(
-			     internal_handle->ranges_array,
-			     range_index,
-			     (intptr_t **) &range,
-			     error ) != 1 )
-			{
-				libcerror_error_set(
-				 error,
-				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
-				 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
-				 "%s: unable to retrieve range: %d.",
-				 function,
-				 range_index );
-
-				return( -1 );
-			}
-			if( range == NULL )
-			{
-				libcerror_error_set(
-				 error,
-				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
-				 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
-				 "%s: missing range: %d.",
-				 function,
-				 range_index );
-
-				return( -1 );
-			}
 		}
 	}
 	return( (ssize_t) buffer_offset );
@@ -2606,18 +2621,16 @@ ssize_t libbfoverlay_internal_handle_write_buffer(
          size_t buffer_size,
          libcerror_error_t **error )
 {
-	libbfoverlay_range_t *range    = NULL;
 	static char *function          = "libbfoverlay_internal_handle_write_buffer";
 	size_t buffer_offset           = 0;
 	size_t cow_block_offset        = 0;
-	size_t read_size               = 0;
+	size_t write_size              = 0;
 	ssize_t read_count             = 0;
 	ssize_t write_count            = 0;
 	off64_t cow_block_end_offset   = 0;
 	off64_t cow_block_start_offset = 0;
-	off64_t current_offset         = 0;
 	off64_t file_offset            = 0;
-	int range_index                = 0;
+	off64_t safe_current_offset    = 0;
 	int result                     = 0;
 
 	if( internal_handle == NULL )
@@ -2627,6 +2640,17 @@ ssize_t libbfoverlay_internal_handle_write_buffer(
 		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
 		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
 		 "%s: invalid handle.",
+		 function );
+
+		return( -1 );
+	}
+	if( internal_handle->current_offset < 0 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+		 "%s: invalid handle - current offset value out of bounds.",
 		 function );
 
 		return( -1 );
@@ -2653,32 +2677,6 @@ ssize_t libbfoverlay_internal_handle_write_buffer(
 
 		return( -1 );
 	}
-	if( (size64_t) internal_handle->current_offset >= internal_handle->size )
-	{
-		return( 0 );
-	}
-	if( (size64_t) buffer_size > ( internal_handle->size - internal_handle->current_offset ) )
-	{
-		buffer_size = (size_t) ( internal_handle->size - internal_handle->current_offset );
-	}
-	if( libbfoverlay_internal_handle_get_range_at_offset(
-	     internal_handle,
-	     internal_handle->current_offset,
-	     &range_index,
-	     &range,
-	     error ) != 1 )
-	{
-		libcerror_error_set(
-		 error,
-		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
-		 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
-		 "%s: unable to retrieve range at offset %" PRIi64 " (0x%08" PRIx64 ").",
-		 function,
-		 internal_handle->current_offset,
-		 internal_handle->current_offset );
-
-		return( -1 );
-	}
 	while( buffer_offset < buffer_size )
 	{
 		result = libbfoverlay_cow_file_get_block_at_offset(
@@ -2697,15 +2695,32 @@ ssize_t libbfoverlay_internal_handle_write_buffer(
 			 error,
 			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
 			 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
-			 "%s: unable to retrieve COW block at offset %" PRIi64 " (0x%08" PRIx64 ").",
+			 "%s: unable to retrieve COW block at offset: %" PRIi64 " (0x%08" PRIx64 ").",
 			 function,
 			 internal_handle->current_offset,
 			 internal_handle->current_offset );
 
 			return( -1 );
 		}
-		current_offset = internal_handle->current_offset;
+		safe_current_offset = internal_handle->current_offset;
 
+		if( libbfoverlay_internal_handle_seek_offset(
+		     internal_handle,
+		     cow_block_start_offset,
+		     SEEK_SET,
+		     error ) == -1 )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_IO,
+			 LIBCERROR_IO_ERROR_SEEK_FAILED,
+			 "%s: unable to seek COW block offset: %" PRIi64 " (0x%08" PRIx64 ").",
+			 function,
+			 cow_block_start_offset,
+			 cow_block_start_offset );
+
+			return( -1 );
+		}
 		read_count = libbfoverlay_internal_handle_read_buffer(
 			      internal_handle,
 		              internal_handle->cow_block_data,
@@ -2721,7 +2736,7 @@ ssize_t libbfoverlay_internal_handle_write_buffer(
 			 "%s: unable to read COW block data.",
 			 function );
 
-			read_count = -1;
+			return( -1 );
 		}
 		if( read_count < (ssize_t) internal_handle->cow_file->block_size )
 		{
@@ -2740,18 +2755,20 @@ ssize_t libbfoverlay_internal_handle_write_buffer(
 				return( -1 );
 			}
 		}
-		cow_block_offset = (size_t) ( current_offset - cow_block_start_offset );
+		internal_handle->current_offset = safe_current_offset;
 
-		read_size = buffer_size - buffer_offset;
+		cow_block_offset = (size_t) ( internal_handle->current_offset - cow_block_start_offset );
 
-		if( (int64_t) read_size > ( cow_block_end_offset - current_offset ) )
+		write_size = buffer_size - buffer_offset;
+
+		if( (int64_t) write_size > ( cow_block_end_offset - internal_handle->current_offset ) )
 		{
-			read_size = (size_t) ( cow_block_end_offset - current_offset );
+			write_size = (size_t) ( cow_block_end_offset - internal_handle->current_offset );
 		}
 		if( memory_copy(
 		     &( ( internal_handle->cow_block_data )[ cow_block_offset ] ),
 		     &( buffer[ buffer_offset ] ),
-		     read_size ) == NULL )
+		     write_size ) == NULL )
 		{
 			libcerror_error_set(
 			 error,
@@ -2762,26 +2779,24 @@ ssize_t libbfoverlay_internal_handle_write_buffer(
 
 			return( -1 );
 		}
-		buffer_offset += read_size;
-
 		if( result == 0 )
 		{
 			if( libbfoverlay_cow_file_allocate_block_for_offset(
 			     internal_handle->cow_file,
 			     internal_handle->data_file_io_pool,
 			     internal_handle->cow_file_io_pool_entry,
-			     current_offset,
+			     internal_handle->current_offset,
 			     &file_offset,
 			     error ) != 1 )
 			{
 				libcerror_error_set(
 				 error,
 				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
-				 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
-				 "%s: unable to retrieve range at offset %" PRIi64 " (0x%08" PRIx64 ").",
+				 LIBCERROR_RUNTIME_ERROR_SET_FAILED,
+				 "%s: unable to allocate block in COW file for offset %" PRIi64 " (0x%08" PRIx64 ").",
 				 function,
-				 current_offset,
-				 current_offset );
+				 internal_handle->current_offset,
+				 internal_handle->current_offset );
 
 				return( -1 );
 			}
@@ -2808,6 +2823,28 @@ ssize_t libbfoverlay_internal_handle_write_buffer(
 
 			return( -1 );
 		}
+		buffer_offset                   += write_size;
+		internal_handle->current_offset += write_size;
+	}
+	if( (size64_t) internal_handle->current_offset > internal_handle->size )
+	{
+		if( libbfoverlay_cow_file_set_data_size(
+		     internal_handle->cow_file,
+		     internal_handle->data_file_io_pool,
+		     internal_handle->cow_file_io_pool_entry,
+		     (size64_t) internal_handle->current_offset,
+		     error ) != 1 )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+			 LIBCERROR_RUNTIME_ERROR_SET_FAILED,
+			 "%s: unable to set data size in COW file.",
+			 function );
+
+			return( -1 );
+		}
+		internal_handle->size = (size64_t) internal_handle->current_offset;
 	}
 	return( (ssize_t) buffer_offset );
 }
@@ -3193,6 +3230,106 @@ off64_t libbfoverlay_handle_seek_offset(
 	}
 #endif
 	return( offset );
+}
+
+/* Resizes the data of the handle
+ * Returns 1 if successful or -1 on error
+ */
+int libbfoverlay_handle_resize(
+     libbfoverlay_handle_t *handle,
+     size64_t size,
+     libcerror_error_t **error )
+{
+	libbfoverlay_internal_handle_t *internal_handle = NULL;
+	static char *function                           = "libbfoverlay_handle_resize";
+	int result                                      = 1;
+
+	if( handle == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
+		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
+		 "%s: invalid handle.",
+		 function );
+
+		return( -1 );
+	}
+	internal_handle = (libbfoverlay_internal_handle_t *) handle;
+
+	if( internal_handle->data_file_io_pool == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
+		 "%s: invalid handle - missing data file IO pool.",
+		 function );
+
+		return( -1 );
+	}
+	if( internal_handle->cow_file == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
+		 "%s: invalid handle - missing COW file.",
+		 function );
+
+		return( -1 );
+	}
+#if defined( HAVE_MULTI_THREAD_SUPPORT ) && !defined( HAVE_LOCAL_LIBBFOVERLAY )
+	if( libcthreads_read_write_lock_grab_for_write(
+	     internal_handle->read_write_lock,
+	     error ) != 1 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_SET_FAILED,
+		 "%s: unable to grab read/write lock for writing.",
+		 function );
+
+		return( -1 );
+	}
+#endif
+	if( libbfoverlay_cow_file_set_data_size(
+	     internal_handle->cow_file,
+	     internal_handle->data_file_io_pool,
+	     internal_handle->cow_file_io_pool_entry,
+	     size,
+	     error ) != 1 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_SET_FAILED,
+		 "%s: unable to set data size in COW file.",
+		 function );
+
+		result = -1;
+	}
+	else
+	{
+		internal_handle->size = size;
+	}
+#if defined( HAVE_MULTI_THREAD_SUPPORT ) && !defined( HAVE_LOCAL_LIBBFOVERLAY )
+	if( libcthreads_read_write_lock_release_for_write(
+	     internal_handle->read_write_lock,
+	     error ) != 1 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_SET_FAILED,
+		 "%s: unable to release read/write lock for writing.",
+		 function );
+
+		return( -1 );
+	}
+#endif
+	return( result );
 }
 
 /* Retrieves the current offset

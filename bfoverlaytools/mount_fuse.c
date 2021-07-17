@@ -273,6 +273,87 @@ int mount_fuse_filldir(
 	return( 1 );
 }
 
+/* Changes the size of a file
+ * Returns 0 if successful or a negative errno value otherwise
+ */
+int mount_fuse_truncate(
+     const char *path,
+     off_t size )
+{
+	libcerror_error_t *error       = NULL;
+	mount_file_entry_t *file_entry = NULL;
+	static char *function          = "mount_fuse_truncate";
+	int result                     = 0;
+
+#if defined( HAVE_DEBUG_OUTPUT )
+	if( libcnotify_verbose != 0 )
+	{
+		libcnotify_printf(
+		 "%s: %s\n",
+		 function,
+		 path );
+	}
+#endif
+	if( path == NULL )
+	{
+		libcerror_error_set(
+		 &error,
+		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
+		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
+		 "%s: invalid path.",
+		 function );
+
+		result = -EINVAL;
+
+		goto on_error;
+	}
+	if( mount_handle_get_file_entry_by_path(
+	     bfoverlaymount_mount_handle,
+	     path,
+	     &file_entry,
+	     &error ) != 1 )
+	{
+		libcerror_error_set(
+		 &error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
+		 "%s: unable to retrieve file entry for path: %s.",
+		 function,
+		 path );
+
+		result = -ENOENT;
+
+		goto on_error;
+	}
+	if( mount_file_entry_resize(
+	     file_entry,
+	     (size64_t) size,
+	     &error ) != 1 )
+	{
+		libcerror_error_set(
+		 &error,
+		 LIBCERROR_ERROR_DOMAIN_IO,
+		 LIBCERROR_IO_ERROR_GENERIC,
+		 "%s: unable to resize file entry.",
+		 function );
+
+		result = -EIO;
+
+		goto on_error;
+	}
+	return( 0 );
+
+on_error:
+	if( error != NULL )
+	{
+		libcnotify_print_error_backtrace(
+		 error );
+		libcerror_error_free(
+		 &error );
+	}
+	return( result );
+}
+
 /* Opens a file or directory
  * Returns 0 if successful or a negative errno value otherwise
  */

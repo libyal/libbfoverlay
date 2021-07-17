@@ -81,6 +81,13 @@ int libbfoverlay_cow_file_close(
      libbfoverlay_cow_file_t *cow_file,
      libcerror_error_t **error );
 
+int libbfoverlay_cow_file_set_data_size(
+     libbfoverlay_cow_file_t *cow_file,
+     libbfio_pool_t *file_io_pool,
+     int file_io_pool_entry,
+     size64_t data_size,
+     libcerror_error_t **error );
+
 int libbfoverlay_cow_file_enlarge_allocation_table(
      libbfoverlay_cow_file_t *cow_file,
      libbfio_pool_t *file_io_pool,

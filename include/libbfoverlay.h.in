@@ -287,6 +287,15 @@ off64_t libbfoverlay_handle_seek_offset(
          int whence,
          libbfoverlay_error_t **error );
 
+/* Resizes the data of the handle
+ * Returns 1 if successful or -1 on error
+ */
+LIBBFOVERLAY_EXTERN \
+int libbfoverlay_handle_resize(
+     libbfoverlay_handle_t *handle,
+     size64_t size,
+     libbfoverlay_error_t **error );
+
 /* Retrieves the current offset
  * Returns 1 if successful or -1 on error
  */

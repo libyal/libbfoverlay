@@ -65,6 +65,10 @@ int mount_fuse_filldir(
      mount_file_entry_t *file_entry,
      libcerror_error_t **error );
 
+int mount_fuse_truncate(
+     const char *path,
+     off_t size );
+
 int mount_fuse_open(
      const char *path,
      struct fuse_file_info *file_info );

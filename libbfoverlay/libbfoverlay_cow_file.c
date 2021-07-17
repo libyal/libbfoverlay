@@ -29,6 +29,7 @@
 #include "libbfoverlay_definitions.h"
 #include "libbfoverlay_libbfio.h"
 #include "libbfoverlay_libcerror.h"
+#include "libbfoverlay_libcnotify.h"
 
 #include "bfoverlay_cow_allocation_table_block.h"
 #include "bfoverlay_cow_file_header.h"
@@ -175,7 +176,6 @@ int libbfoverlay_cow_file_open(
 	static char *function                       = "libbfoverlay_cow_file_open";
 	size64_t file_size                          = 0;
 	uint64_t number_of_blocks                   = 0;
-	uint32_t number_of_allocated_blocks         = 0;
 
 	if( cow_file == NULL )
 	{
@@ -267,17 +267,6 @@ int libbfoverlay_cow_file_open(
 			goto on_error;
 		}
 	}
-	if( file_header->data_size != cow_file->data_size )
-	{
-		libcerror_error_set(
-		 error,
-		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
-		 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
-		 "%s: invalid COW file data size value out of bounds.",
-		 function );
-
-		return( -1 );
-	}
 	if( ( (size_t) file_header->block_size < sizeof( bfoverlay_cow_file_header_t ) )
 	 || ( file_header->block_size != cow_file->block_size ) )
 	{
@@ -307,7 +296,10 @@ int libbfoverlay_cow_file_open(
 	{
 		number_of_blocks += 1;
 	}
-	number_of_allocated_blocks = file_header->number_of_allocated_blocks;
+	cow_file->data_size                  = file_header->data_size;
+	cow_file->number_of_allocated_blocks = file_header->number_of_allocated_blocks;
+	cow_file->last_data_block_number     = (uint32_t) ( file_size / cow_file->block_size );
+	cow_file->l1_allocation_table_offset = (off64_t) sizeof( bfoverlay_cow_file_header_t );
 
 	if( libbfoverlay_cow_file_header_free(
 	     &file_header,
@@ -336,10 +328,6 @@ int libbfoverlay_cow_file_open(
 
 		goto on_error;
 	}
-	cow_file->number_of_allocated_blocks = number_of_allocated_blocks;
-	cow_file->last_data_block_number     = (uint32_t) ( file_size / cow_file->block_size );
-	cow_file->l1_allocation_table_offset = (off64_t) sizeof( bfoverlay_cow_file_header_t );
-
 	return( 1 );
 
 on_error:
@@ -394,6 +382,78 @@ int libbfoverlay_cow_file_close(
 	return( 1 );
 }
 
+/* Sets the data size in the file header
+ * Returns 1 if successful or -1 on error
+ */
+int libbfoverlay_cow_file_set_data_size(
+     libbfoverlay_cow_file_t *cow_file,
+     libbfio_pool_t *file_io_pool,
+     int file_io_pool_entry,
+     size64_t data_size,
+     libcerror_error_t **error )
+{
+	uint8_t cow_file_header_data[ 8 ];
+
+	static char *function = "libbfoverlay_cow_file_set_data_size";
+	ssize_t write_count   = 0;
+	off64_t file_offset   = 0;
+
+	if( cow_file == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
+		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
+		 "%s: invalid COW file.",
+		 function );
+
+		return( -1 );
+	}
+#if defined( HAVE_DEBUG_OUTPUT )
+	if( libcnotify_verbose != 0 )
+	{
+		libcnotify_printf(
+		 "%s: data size\t\t\t: %" PRIu64 "\n",
+		 function,
+		 data_size );
+
+		libcnotify_printf(
+		 "\n" );
+	}
+#endif /* defined( HAVE_DEBUG_OUTPUT ) */
+
+	byte_stream_copy_from_uint64_big_endian(
+	 cow_file_header_data,
+	 data_size );
+
+	file_offset = 16;
+
+	write_count = libbfio_pool_write_buffer_at_offset(
+	               file_io_pool,
+	               file_io_pool_entry,
+	               cow_file_header_data,
+	               8,
+	               file_offset,
+	               error );
+
+	if( write_count != (ssize_t) 8 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_IO,
+		 LIBCERROR_IO_ERROR_WRITE_FAILED,
+		 "%s: unable to write data size at offset: %" PRIi64 " (0x%08" PRIx64 ").",
+		 function,
+		 file_offset,
+		 file_offset );
+
+		return( -1 );
+	}
+	cow_file->data_size = data_size;
+
+	return( 1 );
+}
+
 /* Enlarges the allocation table
  * Returns 1 if successful or -1 on error
  */
@@ -427,6 +487,18 @@ int libbfoverlay_cow_file_enlarge_allocation_table(
 		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
 		 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
 		 "%s: invalid COW file - missing allocation table block.",
+		 function );
+
+		return( -1 );
+	}
+	if( ( cow_file->number_of_allocated_blocks == 0 )
+	 || ( cow_file->number_of_allocated_blocks > ( (uint32_t) UINT32_MAX / cow_file->allocation_table_block->number_of_entries ) ) )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+		 "%s: invalid number of allocated blocks value out of bounds.",
 		 function );
 
 		return( -1 );
