@@ -43,6 +43,10 @@ struct libbfoverlay_cow_file_header
 	/* The data size
 	 */
 	uint64_t data_size;
+
+	/* The number of allocated blocks
+	 */
+	uint32_t number_of_allocated_blocks;
 };
 
 int libbfoverlay_cow_file_header_initialize(

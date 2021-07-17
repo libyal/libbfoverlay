@@ -25,10 +25,12 @@
 #include <types.h>
 
 #include "libbfoverlay_cow_file_header.h"
+#include "libbfoverlay_definitions.h"
 #include "libbfoverlay_libbfio.h"
 #include "libbfoverlay_libcerror.h"
 #include "libbfoverlay_libcnotify.h"
 
+#include "bfoverlay_cow_allocation_table_block.h"
 #include "bfoverlay_cow_file_header.h"
 
 /* Creates COW file header
@@ -210,13 +212,17 @@ int libbfoverlay_cow_file_header_read_data(
 	 ( (bfoverlay_cow_file_header_t *) data )->format_version,
 	 format_version );
 
+	byte_stream_copy_to_uint64_big_endian(
+	 ( (bfoverlay_cow_file_header_t *) data )->data_size,
+	 cow_file_header->data_size );
+
 	byte_stream_copy_to_uint32_big_endian(
 	 ( (bfoverlay_cow_file_header_t *) data )->block_size,
 	 cow_file_header->block_size );
 
-	byte_stream_copy_to_uint64_big_endian(
-	 ( (bfoverlay_cow_file_header_t *) data )->data_size,
-	 cow_file_header->data_size );
+	byte_stream_copy_to_uint32_big_endian(
+	 ( (bfoverlay_cow_file_header_t *) data )->number_of_allocated_blocks,
+	 cow_file_header->number_of_allocated_blocks );
 
 #if defined( HAVE_DEBUG_OUTPUT )
 	if( libcnotify_verbose != 0 )
@@ -242,16 +248,16 @@ int libbfoverlay_cow_file_header_read_data(
 		 cow_file_header->block_size );
 
 		libcnotify_printf(
-		 "%s: padding:\n",
-		 function );
-		libcnotify_print_data(
-		 ( (bfoverlay_cow_file_header_t *) data )->padding,
-		 4,
-		 0 );
+		 "%s: number of allocated blocks\t: %" PRIu32 "\n",
+		 function,
+		 cow_file_header->number_of_allocated_blocks );
+
+		libcnotify_printf(
+		 "\n" );
 	}
 #endif /* defined( HAVE_DEBUG_OUTPUT ) */
 
-	if( format_version != 20210716 )
+	if( format_version != LIBBFOVERLAY_COW_FILE_FORMAT_VERSION )
 	{
 		libcerror_error_set(
 		 error,
@@ -368,7 +374,8 @@ int libbfoverlay_cow_file_header_write_file_io_pool(
 
 		return( -1 );
 	}
-	cow_file_header->block_size = 4096;
+	cow_file_header->block_size                 = 4096;
+	cow_file_header->number_of_allocated_blocks = (uint32_t) ( cow_file_header->block_size - sizeof( bfoverlay_cow_file_header_t ) ) / sizeof( bfoverlay_cow_allocation_table_block_entry_t );
 
 	if( memory_copy(
 	     cow_file_header_data,
@@ -400,7 +407,7 @@ int libbfoverlay_cow_file_header_write_file_io_pool(
 	}
 	byte_stream_copy_from_uint32_big_endian(
 	 ( (bfoverlay_cow_file_header_t *) cow_file_header_data )->format_version,
-	 20210716 );
+	 LIBBFOVERLAY_COW_FILE_FORMAT_VERSION );
 
 	byte_stream_copy_from_uint64_big_endian(
 	 ( (bfoverlay_cow_file_header_t *) cow_file_header_data )->data_size,
@@ -409,6 +416,10 @@ int libbfoverlay_cow_file_header_write_file_io_pool(
 	byte_stream_copy_from_uint32_big_endian(
 	 ( (bfoverlay_cow_file_header_t *) cow_file_header_data )->block_size,
 	 cow_file_header->block_size );
+
+	byte_stream_copy_from_uint32_big_endian(
+	 ( (bfoverlay_cow_file_header_t *) cow_file_header_data )->number_of_allocated_blocks,
+	 cow_file_header->number_of_allocated_blocks );
 
 #if defined( HAVE_DEBUG_OUTPUT )
 	if( libcnotify_verbose != 0 )

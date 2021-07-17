@@ -49,6 +49,16 @@ struct bfoverlay_cow_allocation_table_block_header
 	uint8_t padding[ 16 ];
 };
 
+typedef struct bfoverlay_cow_allocation_table_block_entry bfoverlay_cow_allocation_table_block_entry_t;
+
+struct bfoverlay_cow_allocation_table_block_entry
+{
+	/* Block number
+	 * Consists of 4 bytes
+	 */
+	uint8_t block_number[ 4 ];
+};
+
 #if defined( __cplusplus )
 }
 #endif

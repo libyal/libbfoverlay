@@ -25,6 +25,7 @@
 #include <types.h>
 
 #include "libbfoverlay_cow_allocation_table_block.h"
+#include "libbfoverlay_definitions.h"
 #include "libbfoverlay_libbfio.h"
 #include "libbfoverlay_libcerror.h"
 #include "libbfoverlay_libcnotify.h"
@@ -76,7 +77,7 @@ int libbfoverlay_cow_allocation_table_block_initialize(
 
 		return( -1 );
 	}
-	number_of_entries = ( (size_t) block_size - sizeof( bfoverlay_cow_allocation_table_block_header_t ) ) / 8;
+	number_of_entries = ( (size_t) block_size - sizeof( bfoverlay_cow_allocation_table_block_header_t ) ) / sizeof( bfoverlay_cow_allocation_table_block_entry_t );
 
 	if( ( number_of_entries == 0 )
 	 || ( number_of_entries > (size_t) INT_MAX ) )
@@ -172,14 +173,14 @@ int libbfoverlay_cow_allocation_table_block_get_block_number_by_index(
      int file_io_pool_entry,
      off64_t file_offset,
      int entry_index,
-     uint64_t *block_number,
+     uint32_t *block_number,
      libcerror_error_t **error )
 {
-	uint8_t cow_allocation_table_block_entry_data[ 8 ];
+	uint8_t cow_allocation_table_block_entry_data[ sizeof( bfoverlay_cow_allocation_table_block_entry_t ) ];
 
 	static char *function      = "libbfoverlay_cow_allocation_table_block_get_block_number_by_index";
 	ssize_t read_count         = 0;
-	uint64_t safe_block_number = 0;
+	uint32_t safe_block_number = 0;
 
 	if( cow_allocation_table_block == NULL )
 	{
@@ -215,17 +216,17 @@ int libbfoverlay_cow_allocation_table_block_get_block_number_by_index(
 
 		return( -1 );
 	}
-	file_offset += entry_index * 8;
+	file_offset += entry_index * sizeof( bfoverlay_cow_allocation_table_block_entry_t );
 
 	read_count = libbfio_pool_read_buffer_at_offset(
 	             file_io_pool,
 	             file_io_pool_entry,
 	             cow_allocation_table_block_entry_data,
-	             8,
+	             sizeof( bfoverlay_cow_allocation_table_block_entry_t ),
 	             file_offset,
 	             error );
 
-	if( read_count != (ssize_t) 8 )
+	if( read_count != (ssize_t) sizeof( bfoverlay_cow_allocation_table_block_entry_t ) )
 	{
 		libcerror_error_set(
 		 error,
@@ -239,7 +240,7 @@ int libbfoverlay_cow_allocation_table_block_get_block_number_by_index(
 
 		return( -1 );
 	}
-	byte_stream_copy_to_uint64_big_endian(
+	byte_stream_copy_to_uint32_big_endian(
 	 cow_allocation_table_block_entry_data,
 	 safe_block_number );
 
@@ -257,11 +258,11 @@ int libbfoverlay_cow_allocation_table_block_set_block_number_by_index(
      int file_io_pool_entry,
      off64_t file_offset,
      int entry_index,
-     uint64_t block_number,
+     uint32_t block_number,
      uint8_t write_header,
      libcerror_error_t **error )
 {
-	uint8_t cow_allocation_table_block_entry_data[ 8 ];
+	uint8_t cow_allocation_table_block_entry_data[ sizeof( bfoverlay_cow_allocation_table_block_entry_t ) ];
 	uint8_t cow_allocation_table_block_header_data[ sizeof( bfoverlay_cow_allocation_table_block_header_t ) ];
 
 	static char *function = "libbfoverlay_cow_allocation_table_block_set_block_number_by_index";
@@ -322,7 +323,7 @@ int libbfoverlay_cow_allocation_table_block_set_block_number_by_index(
 		}
 		byte_stream_copy_from_uint32_big_endian(
 		 ( (bfoverlay_cow_allocation_table_block_header_t *) cow_allocation_table_block_header_data )->format_version,
-		 20210716 );
+		 LIBBFOVERLAY_COW_FILE_FORMAT_VERSION );
 
 #if defined( HAVE_DEBUG_OUTPUT )
 		if( libcnotify_verbose != 0 )
@@ -356,21 +357,21 @@ int libbfoverlay_cow_allocation_table_block_set_block_number_by_index(
 			return( -1 );
 		}
 	}
-	byte_stream_copy_from_uint64_big_endian(
+	byte_stream_copy_from_uint32_big_endian(
 	 cow_allocation_table_block_entry_data,
 	 block_number );
 
-	file_offset += entry_index * 8;
+	file_offset += entry_index * sizeof( bfoverlay_cow_allocation_table_block_entry_t );
 
 	write_count = libbfio_pool_write_buffer_at_offset(
 	              file_io_pool,
 	              file_io_pool_entry,
 	              cow_allocation_table_block_entry_data,
-	              8,
+	              sizeof( bfoverlay_cow_allocation_table_block_entry_t ),
 	              file_offset,
 	              error );
 
-	if( write_count != (ssize_t) 8 )
+	if( write_count != (ssize_t) sizeof( bfoverlay_cow_allocation_table_block_entry_t ) )
 	{
 		libcerror_error_set(
 		 error,

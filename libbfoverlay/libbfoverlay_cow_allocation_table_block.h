@@ -56,7 +56,7 @@ int libbfoverlay_cow_allocation_table_block_get_block_number_by_index(
      int file_io_pool_entry,
      off64_t file_offset,
      int entry_index,
-     uint64_t *block_number,
+     uint32_t *block_number,
      libcerror_error_t **error );
 
 int libbfoverlay_cow_allocation_table_block_set_block_number_by_index(
@@ -65,7 +65,7 @@ int libbfoverlay_cow_allocation_table_block_set_block_number_by_index(
      int file_io_pool_entry,
      off64_t file_offset,
      int entry_index,
-     uint64_t block_number,
+     uint32_t block_number,
      uint8_t write_header,
      libcerror_error_t **error );
 
