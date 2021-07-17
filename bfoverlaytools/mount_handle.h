@@ -60,6 +60,11 @@ int mount_handle_signal_abort(
      mount_handle_t *mount_handle,
      libcerror_error_t **error );
 
+int mount_handle_set_io_trace_file(
+     mount_handle_t *mount_handle,
+     const system_character_t *filename,
+     libcerror_error_t **error );
+
 int mount_handle_set_path_prefix(
      mount_handle_t *mount_handle,
      const system_character_t *path_prefix,

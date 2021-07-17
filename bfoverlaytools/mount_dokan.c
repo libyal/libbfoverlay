@@ -41,12 +41,14 @@ extern mount_handle_t *bfoverlaymount_mount_handle;
 #define MOUNT_DOKAN_ERROR_FILE_NOT_FOUND -ERROR_FILE_NOT_FOUND
 #define MOUNT_DOKAN_ERROR_GENERIC_FAILURE -ERROR_GEN_FAILURE
 #define MOUNT_DOKAN_ERROR_READ_FAULT -ERROR_READ_FAULT
+#define MOUNT_DOKAN_ERROR_WRITE_FAULT -ERROR_WRITE_FAULT
 
 #else
 #define MOUNT_DOKAN_ERROR_BAD_ARGUMENTS STATUS_UNSUCCESSFUL
 #define MOUNT_DOKAN_ERROR_FILE_NOT_FOUND STATUS_OBJECT_NAME_NOT_FOUND
 #define MOUNT_DOKAN_ERROR_GENERIC_FAILURE STATUS_UNSUCCESSFUL
 #define MOUNT_DOKAN_ERROR_READ_FAULT STATUS_UNEXPECTED_IO_ERROR
+#define MOUNT_DOKAN_ERROR_WRITE_FAULT STATUS_UNEXPECTED_IO_ERROR
 
 #endif /* ( DOKAN_VERSION >= 600 ) && ( DOKAN_VERSION < 800 ) */
 
@@ -1036,11 +1038,11 @@ NTSTATUS __stdcall mount_dokan_WriteFile(
 		libcerror_error_set(
 		 &error,
 		 LIBCERROR_ERROR_DOMAIN_IO,
-		 LIBCERROR_IO_ERROR_READ_FAILED,
+		 LIBCERROR_IO_ERROR_WRITE_FAILED,
 		 "%s: unable to write to mount file entry.",
 		 function );
 
-		result = MOUNT_DOKAN_ERROR_READ_FAULT;
+		result = MOUNT_DOKAN_ERROR_WRITE_FAULT;
 
 		goto on_error;
 	}
@@ -1053,7 +1055,7 @@ NTSTATUS __stdcall mount_dokan_WriteFile(
 		 "%s: invalid write count value exceeds maximum.",
 		 function );
 
-		result = MOUNT_DOKAN_ERROR_READ_FAULT;
+		result = MOUNT_DOKAN_ERROR_WRITE_FAULT;
 
 		goto on_error;
 	}
@@ -1392,6 +1394,96 @@ on_error:
 		mount_file_entry_free(
 		 &file_entry,
 		 NULL );
+	}
+	return( result );
+}
+
+/* Changes the size of a file
+ * Returns 0 if successful or an error code otherwise
+ */
+#if ( DOKAN_VERSION >= 600 ) && ( DOKAN_VERSION < 800 )
+int __stdcall mount_dokan_SetEndOfFile(
+               const wchar_t *path,
+               LONGLONG size,
+               DOKAN_FILE_INFO *file_info )
+#else
+NTSTATUS __stdcall mount_dokan_SetEndOfFile(
+                    const wchar_t *path,
+                    LONGLONG size,
+                    DOKAN_FILE_INFO *file_info )
+#endif
+{
+	libcerror_error_t *error       = NULL;
+	mount_file_entry_t *file_entry = NULL;
+	static char *function          = "mount_dokan_SetEndOfFile";
+	ssize_t write_count            = 0;
+	int result                     = 0;
+
+#if defined( HAVE_DEBUG_OUTPUT )
+	if( libcnotify_verbose != 0 )
+	{
+		libcnotify_printf(
+		 "%s: %ls\n",
+		 function,
+		 path );
+	}
+#endif
+	if( path == NULL )
+	{
+		libcerror_error_set(
+		 &error,
+		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
+		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
+		 "%s: invalid path.",
+		 function );
+
+		result = MOUNT_DOKAN_ERROR_BAD_ARGUMENTS;
+
+		goto on_error;
+	}
+	if( mount_handle_get_file_entry_by_path(
+	     bfoverlaymount_mount_handle,
+	     path,
+	     &file_entry,
+	     &error ) != 1 )
+	{
+		libcerror_error_set(
+		 &error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
+		 "%s: unable to retrieve file entry for path: %ls.",
+		 function,
+		 path );
+
+		result = MOUNT_DOKAN_ERROR_FILE_NOT_FOUND;
+
+		goto on_error;
+	}
+	if( mount_file_entry_resize(
+	     file_entry,
+	     (size64_t) size,
+	     &error ) != 1 )
+	{
+		libcerror_error_set(
+		 &error,
+		 LIBCERROR_ERROR_DOMAIN_IO,
+		 LIBCERROR_IO_ERROR_GENERIC,
+		 "%s: unable to resize file entry.",
+		 function );
+
+		result = MOUNT_DOKAN_ERROR_WRITE_FAULT;
+
+		goto on_error;
+	}
+	return( 0 );
+
+on_error:
+	if( error != NULL )
+	{
+		libcnotify_print_error_backtrace(
+		 error );
+		libcerror_error_free(
+		 &error );
 	}
 	return( result );
 }

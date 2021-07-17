@@ -2,16 +2,15 @@ TODO:
 * library
 ** add indication to specify all remaining data
 ** complete open data file IO handles function
-** add support to track reads and writes in a log file?
 ** add support to read and cache in memory for slow media?
 
 * COW file format
 ** add base block number to allocation table block header?
-** test read and write functions
 ** use vshadow block tree approach as runtime cache of allocation table?
 
 * tests
 ** complete handle tests
+** read and write tests
 
 * document examples
 ** virtualize 0-byte filled data

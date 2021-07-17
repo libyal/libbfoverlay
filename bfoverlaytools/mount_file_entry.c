@@ -878,6 +878,15 @@ ssize_t mount_file_entry_read_buffer_at_offset(
 
 		return( -1 );
 	}
+	mount_file_system_write_io_trace(
+	 file_entry->file_system,
+	 "read",
+	 offset,
+	 buffer_size,
+	 buffer,
+	 (size_t) read_count,
+	 NULL );
+
 	return( read_count );
 }
 
@@ -925,6 +934,15 @@ ssize_t mount_file_entry_write_buffer_at_offset(
 
 		return( -1 );
 	}
+	mount_file_system_write_io_trace(
+	 file_entry->file_system,
+	 "write",
+	 offset,
+	 buffer_size,
+	 buffer,
+	 (size_t) write_count,
+	 NULL );
+
 	return( write_count );
 }
 
@@ -963,6 +981,15 @@ int mount_file_entry_resize(
 
 		return( -1 );
 	}
+	mount_file_system_write_io_trace(
+	 file_entry->file_system,
+	 "resize",
+	 size,
+	 0,
+	 NULL,
+	 0,
+	 NULL );
+
 	return( 1 );
 }
 

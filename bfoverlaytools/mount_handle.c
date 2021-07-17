@@ -199,6 +199,44 @@ int mount_handle_signal_abort(
 	return( 1 );
 }
 
+/* Sets the IO trace file
+ * Returns 1 if successful or -1 on error
+ */
+int mount_handle_set_io_trace_file(
+     mount_handle_t *mount_handle,
+     const system_character_t *filename,
+     libcerror_error_t **error )
+{
+	static char *function = "mount_handle_set_io_trace_file";
+
+	if( mount_handle == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
+		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
+		 "%s: invalid mount handle.",
+		 function );
+
+		return( -1 );
+	}
+	if( mount_file_system_set_io_trace_file(
+	     mount_handle->file_system,
+	     filename,
+	     error ) != 1 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_SET_FAILED,
+		 "%s: unable to set IO trace file.",
+		 function );
+
+		return( -1 );
+	}
+	return( 1 );
+}
+
 /* Sets the path prefix
  * Returns 1 if successful or -1 on error
  */

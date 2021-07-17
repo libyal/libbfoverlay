@@ -51,6 +51,10 @@ struct mount_file_system
 	/* The handles array
 	 */
 	libcdata_array_t *handles_array;
+
+	/* The IO trace file stream
+	 */
+	FILE *io_trace_file_stream;
 };
 
 int mount_file_system_initialize(
@@ -63,6 +67,11 @@ int mount_file_system_free(
 
 int mount_file_system_signal_abort(
      mount_file_system_t *file_system,
+     libcerror_error_t **error );
+
+int mount_file_system_set_io_trace_file(
+     mount_file_system_t *file_system,
+     const system_character_t *filename,
      libcerror_error_t **error );
 
 int mount_file_system_set_path_prefix(
@@ -104,6 +113,36 @@ int mount_file_system_get_path_from_handle_index(
      int handle_index,
      system_character_t *path,
      size_t path_size,
+     libcerror_error_t **error );
+
+int mount_file_system_print_data_as_character(
+     FILE *stream,
+     uint8_t data );
+
+int mount_file_system_print_data_as_characters(
+     FILE *stream,
+     const uint8_t *data,
+     size_t data_size,
+     size_t data_offset );
+
+int mount_file_system_print_data_as_hexadecimal(
+     FILE *stream,
+     const uint8_t *data,
+     size_t data_size,
+     size_t data_offset );
+
+int mount_file_system_print_data(
+     FILE *stream,
+     const uint8_t *data,
+     size_t data_size );
+
+int mount_file_system_write_io_trace(
+     mount_file_system_t *file_system,
+     const char *operation,
+     off64_t offset,
+     size_t size,
+     const uint8_t *data,
+     size_t data_size,
      libcerror_error_t **error );
 
 #if defined( __cplusplus )

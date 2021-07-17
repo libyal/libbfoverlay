@@ -66,13 +66,14 @@ void usage_fprint(
 	}
 	fprintf( stream, "Use bfoverlaymount to mount a basic file overlay\n\n" );
 
-	fprintf( stream, "Usage: bfoverlaymount [ -X extended_options ] [ -hvV ]\n"
+	fprintf( stream, "Usage: bfoverlaymount [ -T file ] [ -X extended_options ] [ -hvV ]\n"
 	                 "                      descriptor_file mount_point\n\n" );
 
 	fprintf( stream, "\tdescriptor_file:  basic file overlay descriptor file\n\n" );
 	fprintf( stream, "\tmount_point:      the directory to serve as mount point\n\n" );
 
 	fprintf( stream, "\t-h:               shows this help\n" );
+	fprintf( stream, "\t-T:               track IO traces in a seperate file\n" );
 	fprintf( stream, "\t-v:               verbose output to stderr, while bfoverlaymount will remain running\n"
 	                 "\t                  in the foreground\n" );
 	fprintf( stream, "\t-V:               print version\n" );
@@ -134,6 +135,7 @@ int main( int argc, char * const argv[] )
 	libbfoverlay_error_t *error                    = NULL;
 	system_character_t *mount_point                = NULL;
 	system_character_t *option_extended_options    = NULL;
+	system_character_t *option_io_trace_file       = NULL;
 	const system_character_t *path_prefix          = NULL;
 	system_character_t *source                     = NULL;
 	char *program                                  = "bfoverlaymount";
@@ -187,7 +189,7 @@ int main( int argc, char * const argv[] )
 	while( ( option = bfoverlaytools_getopt(
 	                   argc,
 	                   argv,
-	                   _SYSTEM_STRING( "hvVX:" ) ) ) != (system_integer_t) -1 )
+	                   _SYSTEM_STRING( "hT:vVX:" ) ) ) != (system_integer_t) -1 )
 	{
 		switch( option )
 		{
@@ -208,6 +210,11 @@ int main( int argc, char * const argv[] )
 				 stdout );
 
 				return( EXIT_SUCCESS );
+
+			case (system_integer_t) 'T':
+				option_io_trace_file = optarg;
+
+				break;
 
 			case (system_integer_t) 'v':
 				verbose = 1;
@@ -269,6 +276,20 @@ int main( int argc, char * const argv[] )
 		 "Unable to initialize mount handle.\n" );
 
 		goto on_error;
+	}
+	if( option_io_trace_file != NULL )
+	{
+		if( mount_handle_set_io_trace_file(
+		     bfoverlaymount_mount_handle,
+		     option_io_trace_file,
+		     &error ) != 1 )
+		{
+			fprintf(
+			 stderr,
+			 "Unable to set IO trace file.\n" );
+
+			goto on_error;
+		}
 	}
 #if defined( WINAPI )
 	path_prefix = _SYSTEM_STRING( "\\BFOVERLAY" );
@@ -474,7 +495,7 @@ int main( int argc, char * const argv[] )
 	bfoverlaymount_dokan_operations.DeleteFile           = NULL;
 	bfoverlaymount_dokan_operations.DeleteDirectory      = NULL;
 	bfoverlaymount_dokan_operations.MoveFile             = NULL;
-	bfoverlaymount_dokan_operations.SetEndOfFile         = NULL;
+	bfoverlaymount_dokan_operations.SetEndOfFile         = &mount_dokan_SetEndOfFile;
 	bfoverlaymount_dokan_operations.SetAllocationSize    = NULL;
 	bfoverlaymount_dokan_operations.LockFile             = NULL;
 	bfoverlaymount_dokan_operations.UnlockFile           = NULL;
@@ -499,7 +520,7 @@ int main( int argc, char * const argv[] )
 	bfoverlaymount_dokan_operations.DeleteFile           = NULL;
 	bfoverlaymount_dokan_operations.DeleteDirectory      = NULL;
 	bfoverlaymount_dokan_operations.MoveFile             = NULL;
-	bfoverlaymount_dokan_operations.SetEndOfFile         = NULL;
+	bfoverlaymount_dokan_operations.SetEndOfFile         = &mount_dokan_SetEndOfFile;
 	bfoverlaymount_dokan_operations.SetAllocationSize    = NULL;
 	bfoverlaymount_dokan_operations.LockFile             = NULL;
 	bfoverlaymount_dokan_operations.UnlockFile           = NULL;

@@ -20,6 +20,7 @@
  */
 
 #include <common.h>
+#include <file_stream.h>
 #include <memory.h>
 #include <narrow_string.h>
 #include <system_string.h>
@@ -266,6 +267,22 @@ int mount_file_system_free(
 
 			result = -1;
 		}
+		if( ( *file_system )->io_trace_file_stream != NULL )
+		{
+			if( file_stream_close(
+			     ( *file_system )->io_trace_file_stream ) != 0 )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_IO,
+				 LIBCERROR_IO_ERROR_CLOSE_FAILED,
+				 "%s: unable to close IO trace file stream.",
+				 function );
+
+				result = -1;
+			}
+			( *file_system )->io_trace_file_stream = NULL;
+		}
 		memory_free(
 		 *file_system );
 
@@ -345,6 +362,72 @@ int mount_file_system_signal_abort(
 
 			return( -1 );
 		}
+	}
+	return( 1 );
+}
+
+/* Sets the IO trace file
+ * Returns 1 if successful or -1 on error
+ */
+int mount_file_system_set_io_trace_file(
+     mount_file_system_t *file_system,
+     const system_character_t *filename,
+     libcerror_error_t **error )
+{
+	static char *function = "mount_file_system_set_io_trace_file";
+
+	if( file_system == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
+		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
+		 "%s: invalid file system.",
+		 function );
+
+		return( -1 );
+	}
+	if( file_system->io_trace_file_stream != NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_ALREADY_SET,
+		 "%s: invalid file system - IO trace file stream value already set.",
+		 function );
+
+		return( -1 );
+	}
+	if( filename == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
+		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
+		 "%s: invalid filename.",
+		 function );
+
+		return( -1 );
+	}
+#if defined( HAVE_WIDE_SYSTEM_CHARACTER )
+	file_system->io_trace_file_stream = file_stream_open_wide(
+	                                     filename,
+	                                     L"wb" );
+#else
+	file_system->io_trace_file_stream = file_stream_open(
+	                                     filename,
+	                                     "wb" );
+#endif
+	if( file_system->io_trace_file_stream == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_IO,
+		 LIBCERROR_IO_ERROR_OPEN_FAILED,
+		 "%s: unable to open IO trace file stream.",
+		 function );
+
+		return( -1 );
 	}
 	return( 1 );
 }
@@ -863,6 +946,353 @@ int mount_file_system_get_path_from_handle_index(
 		path[ path_index-- ] = (system_character_t) '0' + ( handle_number % 10 );
 
 		handle_number /= 10;
+	}
+	return( 1 );
+}
+
+/* Prints the first 16 bytes of data as a hexadecimal values on the notify stream
+ * Returns the number of printed characters if successful or -1 on error
+ */
+int mount_file_system_print_data_as_hexadecimal(
+     FILE *stream,
+     const uint8_t *data,
+     size_t data_size,
+     size_t data_offset )
+{
+	int print_count       = 0;
+	int total_print_count = 0;
+
+	if( stream == NULL )
+	{
+		return( -1 );
+	}
+	if( data == NULL )
+	{
+		return( -1 );
+	}
+	while( data_offset < data_size )
+	{
+		print_count = fprintf(
+		               stream,
+		               "%.2" PRIx8 " ",
+		               data[ data_offset++ ] );
+
+		if( print_count <= -1 )
+		{
+			return( -1 );
+		}
+		total_print_count += print_count;
+
+		if( data_offset % 16 == 0 )
+		{
+			break;
+		}
+		else if( data_offset % 8 == 0 )
+		{
+			print_count = fprintf(
+			               stream,
+			               " " );
+
+			if( print_count <= -1 )
+			{
+				return( -1 );
+			}
+			total_print_count += print_count;
+		}
+	}
+	while( data_offset % 16 != 0 )
+	{
+		data_offset++;
+
+		print_count = fprintf(
+		               stream,
+		               "   " );
+
+		if( print_count <= -1 )
+		{
+			return( -1 );
+		}
+		total_print_count += print_count;
+
+		if( ( data_offset % 8 == 0 )
+		 && ( data_offset % 16 != 0 ) )
+		{
+			print_count = fprintf(
+			               stream,
+			               " " );
+
+			if( print_count <= -1 )
+			{
+				return( -1 );
+			}
+			total_print_count += print_count;
+		}
+	}
+	return( total_print_count );
+}
+
+/* Prints the data as a character on the notify stream
+ * Returns the number of printed characters if successful or -1 on error
+ */
+int mount_file_system_print_data_as_character(
+     FILE *stream,
+     uint8_t data )
+{
+	int print_count = 0;
+
+	if( stream == NULL )
+	{
+		return( -1 );
+	}
+	if( ( data >= 0x20 )
+	 && ( data <= 0x7e ) )
+	{
+		print_count = fprintf(
+		               stream,
+		               "%c",
+		               (char) data );
+	}
+	else
+	{
+		print_count = fprintf(
+		               stream,
+		               "." );
+	}
+	return( print_count );
+}
+
+/* Prints the first 16 bytes of data as a characters on the notify stream
+ * Returns the number of printed characters if successful or -1 on error
+ */
+int mount_file_system_print_data_as_characters(
+     FILE *stream,
+     const uint8_t *data,
+     size_t data_size,
+     size_t data_offset )
+{
+	int print_count       = 0;
+	int total_print_count = 0;
+
+	if( stream == NULL )
+	{
+		return( -1 );
+	}
+	if( data == NULL )
+	{
+		return( -1 );
+	}
+	while( data_offset < data_size )
+	{
+		print_count = mount_file_system_print_data_as_character(
+		               stream,
+		               data[ data_offset++ ] );
+
+		if( print_count <= -1 )
+		{
+			return( -1 );
+		}
+		total_print_count += print_count;
+
+		if( ( data_offset % 16 == 0 )
+		 || ( data_offset == data_size ) )
+		{
+			break;
+		}
+		if( data_offset % 8 == 0 )
+		{
+			print_count = fprintf(
+			               stream,
+			               " " );
+
+			if( print_count <= -1 )
+			{
+				return( -1 );
+			}
+			total_print_count += print_count;
+		}
+	}
+	return( total_print_count );
+}
+
+/* Prints the data on the stream
+ * Returns the number of printed characters if successful or -1 on error
+ */
+int mount_file_system_print_data(
+     FILE *stream,
+     const uint8_t *data,
+     size_t data_size )
+{
+	size_t data_offset    = 0;
+	int in_group          = 0;
+	int print_count       = 0;
+	int total_print_count = 0;
+
+	if( stream == NULL )
+	{
+		return( -1 );
+	}
+	if( data_size > 0 )
+	{
+		if( data == NULL )
+		{
+			return( -1 );
+		}
+	}
+	if( data_size > (size_t) SSIZE_MAX )
+	{
+		return( -1 );
+	}
+	while( data_offset < data_size )
+	{
+		if( ( data_size >= 32 )
+		 && ( data_offset >= 16 )
+		 && ( data_offset <= ( data_size - 32 ) ) )
+		{
+			if( ( memory_compare(
+			       &( data[ data_offset - 16 ] ),
+			       &( data[ data_offset ] ),
+			       16 ) == 0 )
+			 && ( memory_compare(
+			       &( data[ data_offset + 16 ] ),
+			       &( data[ data_offset ] ),
+			       16 ) == 0 ) )
+			{
+				if( in_group == 0 )
+				{
+					print_count = fprintf(
+						       stream,
+						       "...\n" );
+
+					if( print_count <= -1 )
+					{
+						return( -1 );
+					}
+					total_print_count += print_count;
+
+					in_group = 1;
+				}
+				data_offset += 16;
+
+				continue;
+			}
+			in_group = 0;
+		}
+		if( data_offset % 16 == 0 )
+		{
+			print_count = fprintf(
+				       stream,
+				       "%.8" PRIzx ": ",
+				       data_offset );
+
+			if( print_count <= -1 )
+			{
+				return( -1 );
+			}
+			total_print_count += print_count;
+		}
+		print_count = mount_file_system_print_data_as_hexadecimal(
+		               stream,
+		               data,
+		               data_size,
+		               data_offset );
+
+		if( print_count <= -1 )
+		{
+			return( -1 );
+		}
+		total_print_count += print_count;
+
+		print_count = fprintf(
+			       stream,
+			       "  " );
+
+		if( print_count <= -1 )
+		{
+			return( -1 );
+		}
+		total_print_count += print_count;
+
+		print_count = mount_file_system_print_data_as_characters(
+		               stream,
+		               data,
+		               data_size,
+		               data_offset );
+
+		if( print_count <= -1 )
+		{
+			return( -1 );
+		}
+		total_print_count += print_count;
+
+		print_count = fprintf(
+			       stream,
+		               "\n" );
+
+		if( print_count <= -1 )
+		{
+			return( -1 );
+		}
+		total_print_count += print_count;
+
+		data_offset += 16;
+	}
+	print_count = fprintf(
+		       stream,
+		       "\n" );
+
+	if( print_count <= -1 )
+	{
+		return( -1 );
+	}
+	total_print_count += print_count;
+
+	return( total_print_count );
+}
+
+/* Write an IO operation to the IO trace file
+ * Returns 1 if successful or -1 on error
+ */
+int mount_file_system_write_io_trace(
+     mount_file_system_t *file_system,
+     const char *operation,
+     off64_t offset,
+     size_t size,
+     const uint8_t *data,
+     size_t data_size,
+     libcerror_error_t **error )
+{
+	static char *function = "mount_file_system_write_io_trace";
+
+	if( file_system == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
+		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
+		 "%s: invalid file system.",
+		 function );
+
+		return( -1 );
+	}
+	if( file_system->io_trace_file_stream != NULL )
+	{
+		fprintf(
+		 file_system->io_trace_file_stream,
+		 "operation: %s at offset: %" PRIi64 " (0x%08" PRIx64 ") with request size: %" PRIzd " and result size: %" PRIzd "\n\n",
+		 operation,
+		 offset,
+		 offset,
+		 size,
+		 data_size );
+
+		if( ( data != NULL )
+		 && ( data_size > 0 ) )
+		{
+			mount_file_system_print_data(
+			 file_system->io_trace_file_stream,
+			 data,
+			 data_size );
+		}
 	}
 	return( 1 );
 }
