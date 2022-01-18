@@ -48,6 +48,14 @@ struct mount_file_system
 	 */
 	size_t path_prefix_size;
 
+	/* The path suffix
+	 */
+	system_character_t *path_suffix;
+
+	/* The path suffix size
+	 */
+	size_t path_suffix_size;
+
 	/* The handles array
 	 */
 	libcdata_array_t *handles_array;
@@ -78,6 +86,12 @@ int mount_file_system_set_path_prefix(
      mount_file_system_t *file_system,
      const system_character_t *path_prefix,
      size_t path_prefix_size,
+     libcerror_error_t **error );
+
+int mount_file_system_set_path_suffix(
+     mount_file_system_t *file_system,
+     const system_character_t *path_suffix,
+     size_t path_suffix_size,
      libcerror_error_t **error );
 
 int mount_file_system_get_mounted_timestamp(

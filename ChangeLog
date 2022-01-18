@@ -8,6 +8,10 @@ TODO:
 ** add base block number to allocation table block header?
 ** use vshadow block tree approach as runtime cache of allocation table?
 
+* mount tool
+** add suffix option
+** debug log calls to unimplemented fuse functions
+
 * tests
 ** complete handle tests
 ** read and write tests

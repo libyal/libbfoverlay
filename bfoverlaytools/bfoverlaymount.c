@@ -137,10 +137,12 @@ int main( int argc, char * const argv[] )
 	system_character_t *option_extended_options    = NULL;
 	system_character_t *option_io_trace_file       = NULL;
 	const system_character_t *path_prefix          = NULL;
+	const system_character_t *path_suffix          = NULL;
 	system_character_t *source                     = NULL;
 	char *program                                  = "bfoverlaymount";
 	system_integer_t option                        = 0;
 	size_t path_prefix_size                        = 0;
+	size_t path_suffix_size                        = 0;
 	int result                                     = 0;
 	int verbose                                    = 0;
 
@@ -186,6 +188,7 @@ int main( int argc, char * const argv[] )
 	 stdout,
 	 program );
 
+/* TODO add support to set suffix */
 	while( ( option = bfoverlaytools_getopt(
 	                   argc,
 	                   argv,
@@ -311,6 +314,24 @@ int main( int argc, char * const argv[] )
 
 		goto on_error;
 	}
+	if( path_suffix != NULL )
+	{
+		path_suffix_size = 1 + system_string_length(
+		                        path_suffix );
+
+		if( mount_handle_set_path_suffix(
+		     bfoverlaymount_mount_handle,
+		     path_suffix,
+		     path_suffix_size,
+		     &error ) != 1 )
+		{
+			fprintf(
+			 stderr,
+			 "Unable to set path suffix.\n" );
+
+			goto on_error;
+		}
+	}
 	if( mount_handle_open(
 	     bfoverlaymount_mount_handle,
 	     source,
@@ -369,16 +390,50 @@ int main( int argc, char * const argv[] )
 
 		goto on_error;
 	}
-	bfoverlaymount_fuse_operations.truncate   = &mount_fuse_truncate;
-	bfoverlaymount_fuse_operations.open       = &mount_fuse_open;
-	bfoverlaymount_fuse_operations.read       = &mount_fuse_read;
-	bfoverlaymount_fuse_operations.write      = &mount_fuse_write;
-	bfoverlaymount_fuse_operations.release    = &mount_fuse_release;
-	bfoverlaymount_fuse_operations.opendir    = &mount_fuse_opendir;
-	bfoverlaymount_fuse_operations.readdir    = &mount_fuse_readdir;
-	bfoverlaymount_fuse_operations.releasedir = &mount_fuse_releasedir;
-	bfoverlaymount_fuse_operations.getattr    = &mount_fuse_getattr;
-	bfoverlaymount_fuse_operations.destroy    = &mount_fuse_destroy;
+	bfoverlaymount_fuse_operations.getattr     = &mount_fuse_getattr;
+	bfoverlaymount_fuse_operations.readlink    = NULL;
+	bfoverlaymount_fuse_operations.getdir      = NULL;
+	bfoverlaymount_fuse_operations.mknod       = NULL;
+	bfoverlaymount_fuse_operations.mkdir       = NULL;
+	bfoverlaymount_fuse_operations.unlink      = NULL;
+	bfoverlaymount_fuse_operations.rmdir       = NULL;
+	bfoverlaymount_fuse_operations.symlink     = NULL;
+	bfoverlaymount_fuse_operations.rename      = NULL;
+	bfoverlaymount_fuse_operations.link        = NULL;
+	bfoverlaymount_fuse_operations.chmod       = NULL;
+	bfoverlaymount_fuse_operations.chown       = NULL;
+	bfoverlaymount_fuse_operations.truncate    = &mount_fuse_truncate;
+	bfoverlaymount_fuse_operations.utime       = NULL;
+	bfoverlaymount_fuse_operations.open        = &mount_fuse_open;
+	bfoverlaymount_fuse_operations.read        = &mount_fuse_read;
+	bfoverlaymount_fuse_operations.write       = &mount_fuse_write;
+	bfoverlaymount_fuse_operations.statfs      = NULL;
+	bfoverlaymount_fuse_operations.flush       = NULL;
+	bfoverlaymount_fuse_operations.release     = &mount_fuse_release;
+	bfoverlaymount_fuse_operations.fsync       = NULL;
+	bfoverlaymount_fuse_operations.setxattr    = NULL;
+	bfoverlaymount_fuse_operations.getxattr    = NULL;
+	bfoverlaymount_fuse_operations.listxattr   = NULL;
+	bfoverlaymount_fuse_operations.removexattr = NULL;
+	bfoverlaymount_fuse_operations.opendir     = &mount_fuse_opendir;
+	bfoverlaymount_fuse_operations.readdir     = &mount_fuse_readdir;
+	bfoverlaymount_fuse_operations.releasedir  = &mount_fuse_releasedir;
+	bfoverlaymount_fuse_operations.fsyncdir    = NULL;
+	bfoverlaymount_fuse_operations.init        = NULL;
+	bfoverlaymount_fuse_operations.destroy     = &mount_fuse_destroy;
+	bfoverlaymount_fuse_operations.access      = NULL;
+	bfoverlaymount_fuse_operations.create      = NULL;
+	bfoverlaymount_fuse_operations.ftruncate   = NULL;
+	bfoverlaymount_fuse_operations.fgetattr    = NULL;
+	bfoverlaymount_fuse_operations.lock        = NULL;
+	bfoverlaymount_fuse_operations.utimens     = NULL;
+	bfoverlaymount_fuse_operations.bmap        = NULL;
+	bfoverlaymount_fuse_operations.ioctl       = NULL;
+	bfoverlaymount_fuse_operations.poll        = NULL;
+	bfoverlaymount_fuse_operations.write_buf   = NULL;
+	bfoverlaymount_fuse_operations.read_buf    = NULL;
+	bfoverlaymount_fuse_operations.flock       = NULL;
+	bfoverlaymount_fuse_operations.fallocate   = NULL;
 
 	bfoverlaymount_fuse_channel = fuse_mount(
 	                               mount_point,

@@ -277,7 +277,7 @@ int libbfoverlay_cow_file_open(
 		 "%s: invalid COW file block size value out of bounds.",
 		 function );
 
-		return( -1 );
+		goto on_error;
 	}
 	number_of_blocks = (uint64_t) file_header->data_size / file_header->block_size;
 
@@ -290,7 +290,7 @@ int libbfoverlay_cow_file_open(
 		 "%s: invalid number of blocks value out of bounds.",
 		 function );
 
-		return( -1 );
+		goto on_error;
 	}
 	if( ( number_of_blocks % file_header->block_size ) != 0 )
 	{
@@ -992,7 +992,7 @@ int libbfoverlay_cow_file_get_block_at_offset(
 	             safe_file_offset,
 	             error );
 
-	if( read_count != (ssize_t) sizeof( bfoverlay_cow_allocation_table_block_entry_t ) )
+	if( read_count == -1 )
 	{
 		libcerror_error_set(
 		 error,
@@ -1005,6 +1005,11 @@ int libbfoverlay_cow_file_get_block_at_offset(
 		 safe_file_offset );
 
 		return( -1 );
+	}
+/* TODO improve method of determining if allocation table block exists */
+	else if( read_count != (ssize_t) sizeof( bfoverlay_cow_allocation_table_block_entry_t ) )
+	{
+		return( 0 );
 	}
 	byte_stream_copy_to_uint32_big_endian(
 	 cow_allocation_table_entry_data,

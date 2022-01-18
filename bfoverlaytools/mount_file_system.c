@@ -253,6 +253,11 @@ int mount_file_system_free(
 			memory_free(
 			 ( *file_system )->path_prefix );
 		}
+		if( ( *file_system )->path_suffix != NULL )
+		{
+			memory_free(
+			 ( *file_system )->path_suffix );
+		}
 		if( libcdata_array_free(
 		     &( ( *file_system )->handles_array ),
 		     NULL,
@@ -545,6 +550,119 @@ on_error:
 	return( -1 );
 }
 
+/* Sets the path suffix
+ * Returns 1 if successful or -1 on error
+ */
+int mount_file_system_set_path_suffix(
+     mount_file_system_t *file_system,
+     const system_character_t *path_suffix,
+     size_t path_suffix_size,
+     libcerror_error_t **error )
+{
+	static char *function = "mount_file_system_set_path_suffix";
+
+	if( file_system == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
+		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
+		 "%s: invalid file system.",
+		 function );
+
+		return( -1 );
+	}
+	if( file_system->path_suffix != NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_ALREADY_SET,
+		 "%s: invalid file system - path suffix value already set.",
+		 function );
+
+		return( -1 );
+	}
+	if( path_suffix == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
+		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
+		 "%s: invalid path suffix.",
+		 function );
+
+		return( -1 );
+	}
+	if( path_suffix_size == 0 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
+		 "%s: missing path suffix.",
+		 function );
+
+		goto on_error;
+	}
+	if( path_suffix_size > (size_t) ( SSIZE_MAX / sizeof( system_character_t ) ) )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_EXCEEDS_MAXIMUM,
+		 "%s: invalid path suffix size value exceeds maximum.",
+		 function );
+
+		goto on_error;
+	}
+	file_system->path_suffix = system_string_allocate(
+	                            path_suffix_size );
+
+	if( file_system->path_suffix == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_MEMORY,
+		 LIBCERROR_MEMORY_ERROR_INSUFFICIENT,
+		 "%s: unable to create path suffix string.",
+		 function );
+
+		goto on_error;
+	}
+	if( system_string_copy(
+	     file_system->path_suffix,
+	     path_suffix,
+	     path_suffix_size ) == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_COPY_FAILED,
+		 "%s: unable to copy path suffix.",
+		 function );
+
+		goto on_error;
+	}
+	file_system->path_suffix[ path_suffix_size - 1 ] = 0;
+
+	file_system->path_suffix_size = path_suffix_size;
+
+	return( 1 );
+
+on_error:
+	if( file_system->path_suffix != NULL )
+	{
+		memory_free(
+		 file_system->path_suffix );
+
+		file_system->path_suffix = NULL;
+	}
+	file_system->path_suffix_size = 0;
+
+	return( -1 );
+}
+
 /* Retrieves the mounted timestamp
  * On Windows the timestamp is an unsigned 64-bit FILETIME timestamp
  * otherwise the timestamp is a signed 64-bit POSIX date and time value in number of nanoseconds
@@ -676,6 +794,7 @@ int mount_file_system_get_handle_by_path(
 	static char *function        = "mount_file_system_get_handle_by_path";
 	system_character_t character = 0;
 	size_t path_index            = 0;
+	size_t required_path_size    = 0;
 	int handle_index             = 0;
 	int result                   = 0;
 
@@ -744,8 +863,14 @@ int mount_file_system_get_handle_by_path(
 
 		return( 1 );
 	}
-	if( ( path_length < file_system->path_prefix_size )
-	 || ( path_length > ( file_system->path_prefix_size + 3 ) ) )
+	required_path_size = file_system->path_prefix_size;
+
+	if( file_system->path_suffix_size > 0 )
+	{
+		required_path_size += file_system->path_suffix_size - 1;
+	}
+	if( ( path_length < required_path_size )
+	 || ( path_length > ( required_path_size + 3 ) ) )
 	{
 		return( 0 );
 	}
@@ -764,9 +889,30 @@ int mount_file_system_get_handle_by_path(
 	{
 		return( 0 );
 	}
-	handle_index = 0;
+	if( file_system->path_suffix != NULL )
+	{
+		path_index = path_length - ( file_system->path_suffix_size - 1 );
 
+#if defined( WINAPI )
+		result = system_string_compare_no_case(
+		          &( path[ path_index ] ),
+		          file_system->path_suffix,
+		          file_system->path_suffix_size - 1 );
+#else
+		result = system_string_compare(
+		          &( path[ path_index ] ),
+		          file_system->path_suffix,
+		          file_system->path_suffix_size - 1 );
+#endif
+		if( result != 0 )
+		{
+			return( 0 );
+		}
+		path_length = path_index;
+	}
 	path_index = file_system->path_prefix_size - 1;
+
+	handle_index = 0;
 
 	while( path_index < path_length )
 	{
@@ -921,6 +1067,10 @@ int mount_file_system_get_path_from_handle_index(
 
 		return( -1 );
 	}
+	if( file_system->path_suffix_size > 0 )
+	{
+		required_path_size += file_system->path_suffix_size - 1;
+	}
 	if( system_string_copy(
 	     path,
 	     file_system->path_prefix,
@@ -937,9 +1087,30 @@ int mount_file_system_get_path_from_handle_index(
 	}
 	path_index = required_path_size - 1;
 
-	handle_number = handle_index + 1;
+	path[ path_index ] = 0;
 
-	path[ path_index-- ] = 0;
+	if( file_system->path_suffix != NULL )
+	{
+		path_index -= file_system->path_suffix_size - 1;
+
+		if( system_string_copy(
+		     &( path[ path_index ] ),
+		     file_system->path_suffix,
+		     file_system->path_suffix_size - 1 ) == NULL )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+			 LIBCERROR_RUNTIME_ERROR_COPY_FAILED,
+			 "%s: unable to copy path suffix.",
+			 function );
+
+			return( -1 );
+		}
+	}
+	path_index--;
+
+	handle_number = handle_index + 1;
 
 	while( handle_number > 0 )
 	{

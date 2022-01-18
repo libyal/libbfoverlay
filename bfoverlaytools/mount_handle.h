@@ -71,6 +71,12 @@ int mount_handle_set_path_prefix(
      size_t path_prefix_size,
      libcerror_error_t **error );
 
+int mount_handle_set_path_suffix(
+     mount_handle_t *mount_handle,
+     const system_character_t *path_suffix,
+     size_t path_suffix_size,
+     libcerror_error_t **error );
+
 int mount_handle_open(
      mount_handle_t *mount_handle,
      const system_character_t *filename,
