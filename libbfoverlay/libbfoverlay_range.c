@@ -1,7 +1,7 @@
 /*
  * The range functions
  *
- * Copyright (C) 2020-2021, Joachim Metz <joachim.metz@gmail.com>
+ * Copyright (C) 2020-2022, Joachim Metz <joachim.metz@gmail.com>
  *
  * Refer to AUTHORS for acknowledgements.
  *
@@ -134,8 +134,8 @@ int libbfoverlay_range_free(
 	return( 1 );
 }
 
-/* Compares ranges
- * Returns  LIBCDATA_COMPARE_LESS, LIBCDATA_COMPARE_EQUAL, LIBCDATA_COMPARE_GREATER if successful or -1 on error
+/* Compares two ranges
+ * Returns LIBCDATA_COMPARE_LESS, LIBCDATA_COMPARE_EQUAL, LIBCDATA_COMPARE_GREATER if successful or -1 on error
  */
 int libbfoverlay_range_compare(
      libbfoverlay_range_t *first_range,

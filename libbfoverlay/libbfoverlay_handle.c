@@ -1,7 +1,7 @@
 /*
  * Handle functions
  *
- * Copyright (C) 2020-2021, Joachim Metz <joachim.metz@gmail.com>
+ * Copyright (C) 2020-2022, Joachim Metz <joachim.metz@gmail.com>
  *
  * Refer to AUTHORS for acknowledgements.
  *
@@ -932,7 +932,7 @@ int libbfoverlay_internal_handle_open_data_files(
 						 error,
 						 LIBCERROR_ERROR_DOMAIN_RUNTIME,
 						 LIBCERROR_RUNTIME_ERROR_GET_FAILED,
-						 "%s: unable to determine COW layer: %d file size.",
+						 "%s: unable to determine if COW layer: %d data file exists.",
 						 function,
 						 layer_index );
 
