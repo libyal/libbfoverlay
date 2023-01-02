@@ -1,7 +1,7 @@
 /*
  * File header of a basic file overlay copy-on-write (COW) file
  *
- * Copyright (C) 2020-2022, Joachim Metz <joachim.metz@gmail.com>
+ * Copyright (C) 2020-2023, Joachim Metz <joachim.metz@gmail.com>
  *
  * Refer to AUTHORS for acknowledgements.
  *
