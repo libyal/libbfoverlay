@@ -1,6 +1,6 @@
 dnl Checks for required headers and functions
 dnl
-dnl Version: 20230201
+dnl Version: 20200713
 
 dnl Function to detect if libbfoverlay dependencies are available
 AC_DEFUN([AX_LIBBFOVERLAY_CHECK_LOCAL],

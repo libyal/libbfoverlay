@@ -1,4 +1,4 @@
-# Tests library functions and types.
+# Tests tools functions and types.
 #
 # Version: 20230410
 
@@ -6,11 +6,36 @@ $ExitSuccess = 0
 $ExitFailure = 1
 $ExitIgnore = 77
 
-$LibraryTests = "cow_allocation_table_block cow_file cow_file_header descriptor_file error layer notify range support"
-$LibraryTestsWithInput = "handle"
-$OptionSets = ""
+$ToolsTests = "output signal"
+$ToolsTestsWithInput = ""
 
 $InputGlob = "*"
+
+Function GetTestProfileDirectory
+{
+	param( [string]$TestInputDirectory, [string]$TestProfile )
+
+	$TestProfileDirectory = "${TestInputDirectory}\.${TestProfile}"
+
+	If (-Not (Test-Path -Path ${TestProfileDirectory} -PathType "Container"))
+	{
+		New-Item -ItemType "directory" -Path ${TestProfileDirectory}
+	}
+	Return ${TestProfileDirectory}
+}
+
+Function GetTestSetDirectory
+{
+	param( [string]$TestProfileDirectory, [string]$TestSetInputDirectory )
+
+	$TestSetDirectory = "${TestProfileDirectory}\${TestSetInputDirectory.Basename}"
+
+	If (-Not (Test-Path -Path ${TestSetDirectory} -PathType "Container"))
+	{
+		New-Item -ItemType "directory" -Path ${TestSetDirectory}
+	}
+	Return ${TestSetDirectory}
+}
 
 Function GetTestExecutablesDirectory
 {
@@ -59,16 +84,8 @@ Function RunTest
 	param( [string]$TestType )
 
 	$TestDescription = "Testing: ${TestName}"
-	$TestExecutable = "${TestExecutablesDirectory}\bfoverlay_test_${TestName}.exe"
+	$TestExecutable = "${TestExecutablesDirectory}\bfoverlay_test_tools_${TestName}.exe"
 
-	If (-Not (Test-Path -Path ${TestExecutable} -PathType "Leaf"))
-	{
-		Write-Host "${TestDescription} (" -nonewline
-		Write-Host "SKIP" -foreground Cyan -nonewline
-		Write-Host ")"
-
-		Return ${ExitIgnore}
-	}
 	$Output = Invoke-Expression ${TestExecutable}
 	$Result = ${LastExitCode}
 
@@ -76,18 +93,16 @@ Function RunTest
 	{
 		Write-Host ${Output} -foreground Red
 	}
-	Write-Host "${TestDescription} (" -nonewline
+	Write-Host "${TestDescription} " -nonewline
 
 	If (${Result} -ne ${ExitSuccess})
 	{
-		Write-Host "FAIL" -foreground Red -nonewline
+		Write-Host " (FAIL)"
 	}
 	Else
 	{
-		Write-Host "PASS" -foreground Green -nonewline
+		Write-Host " (PASS)"
 	}
-	Write-Host ")"
-
 	Return ${Result}
 }
 
@@ -96,22 +111,10 @@ Function RunTestWithInput
 	param( [string]$TestType )
 
 	$TestDescription = "Testing: ${TestName}"
-	$TestExecutable = "${TestExecutablesDirectory}\bfoverlay_test_${TestName}.exe"
+	$TestExecutable = "${TestExecutablesDirectory}\bfoverlay_test_tools_${TestName}.exe"
 
-	If (-Not (Test-Path -Path ${TestExecutable} -PathType "Leaf"))
-	{
-		Write-Host "${TestDescription} (" -nonewline
-		Write-Host "SKIP" -foreground Cyan -nonewline
-		Write-Host ")"
+	$TestProfileDirectory = GetTestProfileDirectory "input" "bfoverlaytools"
 
-		Return ${ExitIgnore}
-	}
-	$TestProfileDirectory = "input\.libbfoverlay"
-
-	If (-Not (Test-Path -Path ${TestProfileDirectory} -PathType "Container"))
-	{
-		New-Item -ItemType "directory" -Path ${TestProfileDirectory}
-	}
 	$IgnoreList = ReadIgnoreList ${TestProfileDirectory}
 
 	$Result = ${ExitSuccess}
@@ -126,11 +129,11 @@ Function RunTestWithInput
 		{
 			Continue
 		}
-		$TestSetName = ${TestSetInputDirectory}.Name
+		$TestSetDirectory = GetTestSetDirectory ${TestProfileDirectory} ${TestSetInputDirectory}
 
-		If (Test-Path -Path "${TestProfileDirectory}\${TestSetName}\files" -PathType "Leaf")
+		If (Test-Path -Path "${TestSetDirectory}\files" -PathType "Leaf")
 		{
-			$InputFiles = Get-Content -Path "${TestProfileDirectory}\${TestSetName}\files" | Where {$_ -ne ""}
+			$InputFiles = Get-Content -Path "${TestSetDirectory}\files" | Where {$_ -ne ""}
 		}
 		Else
 		{
@@ -138,33 +141,10 @@ Function RunTestWithInput
 		}
 		ForEach ($InputFile in ${InputFiles})
 		{
-			$TestedWithOptions = $False
+			# TODO: add test option support
+			$Output = Invoke-Expression ${TestExecutable}
+			$Result = ${LastExitCode}
 
-			ForEach ($OptionSet in ${OptionSets} -split " ")
-			{
-				$InputFileName = ${InputFile}.Name
-				$TestDataOptionFile = "${TestProfileDirectory}\${TestSetName}\${InputFileName}.${OptionSet}"
-
-				If (-Not (Test-Path -Path "${TestDataOptionFile}" -PathType "Leaf"))
-				{
-					Continue
-				}
-				$InputOptions = Get-content -Path "${TestDataOptionFile}" -First 1
-
-				$Output = Invoke-Expression "${TestExecutable} ${InputOptions} ${InputFile}"
-				$Result = $LastExitCode
-
-				If (${Result} -ne ${ExitSuccess})
-				{
-					Break
-				}
-				$TestedWithOptions = $True
-			}
-			If ((${Result} -eq ${ExitSuccess}) -And (-Not (${TestedWithOptions})))
-			{
-				$Output = Invoke-Expression "${TestExecutable} ${InputFile}"
-				$Result = ${LastExitCode}
-			}
 			If (${Result} -ne ${ExitSuccess})
 			{
 				Break
@@ -179,18 +159,16 @@ Function RunTestWithInput
 	{
 		Write-Host ${Output} -foreground Red
 	}
-	Write-Host "${TestDescription} (" -nonewline
+	Write-Host "${TestDescription} " -nonewline
 
 	If (${Result} -ne ${ExitSuccess})
 	{
-		Write-Host "FAIL" -foreground Red -nonewline
+		Write-Host " (FAIL)"
 	}
 	Else
 	{
-		Write-Host "PASS" -foreground Green -nonewline
+		Write-Host " (PASS)"
 	}
-	Write-Host ")"
-
 	Return ${Result}
 }
 
@@ -205,24 +183,24 @@ If (-Not (Test-Path ${TestExecutablesDirectory}))
 
 $Result = ${ExitIgnore}
 
-Foreach (${TestName} in ${LibraryTests} -split " ")
+Foreach (${TestName} in ${ToolsTests} -split " ")
 {
-	# Split will return an array of a single empty string when LibraryTests is empty.
+	# Split will return an array of a single empty string when ToolsTests is empty.
 	If (-Not (${TestName}))
 	{
 		Continue
 	}
 	$Result = RunTest ${TestName}
 
-	If ((${Result} -ne ${ExitSuccess}) -And (${Result} -ne ${ExitIgnore}))
+	If (${Result} -ne ${ExitSuccess})
 	{
 		Break
 	}
 }
 
-Foreach (${TestName} in ${LibraryTestsWithInput} -split " ")
+Foreach (${TestName} in ${ToolsTestsWithInput} -split " ")
 {
-	# Split will return an array of a single empty string when LibraryTestsWithInput is empty.
+	# Split will return an array of a single empty string when ToolsTestsWithInput is empty.
 	If (-Not (${TestName}))
 	{
 		Continue
@@ -235,7 +213,7 @@ Foreach (${TestName} in ${LibraryTestsWithInput} -split " ")
 	{
 		$Result = RunTest ${TestName}
 	}
-	If ((${Result} -ne ${ExitSuccess}) -And (${Result} -ne ${ExitIgnore}))
+	If (${Result} -ne ${ExitSuccess})
 	{
 		Break
 	}

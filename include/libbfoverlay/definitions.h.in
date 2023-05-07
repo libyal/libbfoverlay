@@ -24,28 +24,28 @@
 
 #include <libbfoverlay/types.h>
 
-#define LIBBFOVERLAY_VERSION			@VERSION@
+#define LIBBFOVERLAY_VERSION		@VERSION@
 
 /* The libbfoverlay version string
  */
-#define LIBBFOVERLAY_VERSION_STRING		"@VERSION@"
+#define LIBBFOVERLAY_VERSION_STRING	"@VERSION@"
 
 /* The access flags definitions
- * bit 1					set to 1 for read access
- * bit 2					set to 1 for write access
- * bit 3-8					not used
+ * bit 1				set to 1 for read access
+ * bit 2				set to 1 for write access
+ * bit 3-8				not used
  */
 enum LIBBFOVERLAY_ACCESS_FLAGS
 {
-	LIBBFOVERLAY_ACCESS_FLAG_READ		= 0x01,
-	LIBBFOVERLAY_ACCESS_FLAG_WRITE		= 0x02,
+	LIBBFOVERLAY_ACCESS_FLAG_READ	= 0x01,
+	LIBBFOVERLAY_ACCESS_FLAG_WRITE	= 0x02,
 };
 
 /* The file access macros
  */
-#define LIBBFOVERLAY_OPEN_READ			( LIBBFOVERLAY_ACCESS_FLAG_READ )
-#define LIBBFOVERLAY_OPEN_WRITE			( LIBBFOVERLAY_ACCESS_FLAG_WRITE )
-#define LIBBFOVERLAY_OPEN_READ_WRITE		( LIBBFOVERLAY_ACCESS_FLAG_READ | LIBBFOVERLAY_ACCESS_FLAG_WRITE )
+#define LIBBFOVERLAY_OPEN_READ		( LIBBFOVERLAY_ACCESS_FLAG_READ )
+#define LIBBFOVERLAY_OPEN_WRITE		( LIBBFOVERLAY_ACCESS_FLAG_WRITE )
+#define LIBBFOVERLAY_OPEN_READ_WRITE	( LIBBFOVERLAY_ACCESS_FLAG_READ | LIBBFOVERLAY_ACCESS_FLAG_WRITE )
 
 #endif /* !defined( _LIBBFOVERLAY_DEFINITIONS_H ) */
 

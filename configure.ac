@@ -2,7 +2,7 @@ AC_PREREQ([2.71])
 
 AC_INIT(
  [libbfoverlay],
- [20230201],
+ [20230507],
  [joachim.metz@gmail.com])
 
 AC_CONFIG_SRCDIR(
