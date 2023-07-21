@@ -557,9 +557,9 @@ int libbfoverlay_handle_open_file_io_handle(
 {
 	libbfoverlay_internal_handle_t *internal_handle = NULL;
 	static char *function                           = "libbfoverlay_handle_open_file_io_handle";
+	uint8_t file_io_handle_opened_in_library        = 0;
 	int bfio_access_flags                           = 0;
 	int file_io_handle_is_open                      = 0;
-	int file_io_handle_opened_in_library            = 0;
 	int result                                      = 1;
 
 	if( handle == NULL )
@@ -679,7 +679,7 @@ int libbfoverlay_handle_open_file_io_handle(
 	{
 		internal_handle->access_flags                     = access_flags;
 		internal_handle->file_io_handle                   = file_io_handle;
-		internal_handle->file_io_handle_opened_in_library = (uint8_t) file_io_handle_opened_in_library;
+		internal_handle->file_io_handle_opened_in_library = file_io_handle_opened_in_library;
 	}
 #if defined( HAVE_MULTI_THREAD_SUPPORT ) && !defined( HAVE_LOCAL_LIBBFOVERLAY )
 	if( libcthreads_read_write_lock_release_for_write(
