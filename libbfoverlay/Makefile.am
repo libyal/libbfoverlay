@@ -71,11 +71,13 @@ MAINTAINERCLEANFILES = \
 	Makefile.in
 
 distclean: clean
-	/bin/rm -f libbfoverlay_definitions.h
-	/bin/rm -f libbfoverlay.rc
-	/bin/rm -f Makefile
+	-rm -f libbfoverlay_definitions.h
+	-rm -f libbfoverlay.rc
+	-rm -f Makefile
 
-splint:
+sources-local: $(BUILT_SOURCES)
+
+splint-local:
 	@echo "Running splint on libbfoverlay ..."
 	-splint -preproc -redef $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(libbfoverlay_la_SOURCES)
 

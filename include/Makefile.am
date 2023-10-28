@@ -19,9 +19,9 @@ MAINTAINERCLEANFILES = \
 	Makefile.in
 
 distclean: clean
-	/bin/rm -f libbfoverlay.h
-	/bin/rm -f libbfoverlay/definitions.h
-	/bin/rm -f libbfoverlay/features.h
-	/bin/rm -f libbfoverlay/types.h
-	/bin/rm -f Makefile
+	-rm -f libbfoverlay.h
+	-rm -f libbfoverlay/definitions.h
+	-rm -f libbfoverlay/features.h
+	-rm -f libbfoverlay/types.h
+	-rm -f Makefile
 
