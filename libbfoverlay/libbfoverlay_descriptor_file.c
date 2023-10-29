@@ -309,7 +309,8 @@ int libbfoverlay_descriptor_file_read_data(
 
 			goto on_error;
 		}
-		if( line_string == NULL )
+		if( ( line_string == NULL )
+		 || ( line_string_size == 0 ) )
 		{
 			libcerror_error_set(
 			 error,
@@ -320,6 +321,14 @@ int libbfoverlay_descriptor_file_read_data(
 			 line_index );
 
 			goto on_error;
+		}
+		/* Note on Ubuntu 22.04 platforms a trailing empty line is added
+		 */
+		if( ( line_string_size == 1 )
+		 && ( number_of_lines > 2 )
+		 && ( line_index == ( number_of_lines - 1 ) ) )
+		{
+			break;
 		}
 		if( ( line_string_size < 7 )
 		 || ( memory_compare(
