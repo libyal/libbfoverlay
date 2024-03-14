@@ -24,7 +24,7 @@ BEGIN
       VALUE "FileDescription",		"Library to provide basic file overlay support\0"
       VALUE "FileVersion",		"@VERSION@" "\0"
       VALUE "InternalName",		"libbfoverlay.dll\0"
-      VALUE "LegalCopyright",		"(C) 2020-2023, Joachim Metz <joachim.metz@gmail.com>\0"
+      VALUE "LegalCopyright",		"(C) 2020-2024, Joachim Metz <joachim.metz@gmail.com>\0"
       VALUE "OriginalFilename",		"libbfoverlay.dll\0"
       VALUE "ProductName",		"libbfoverlay\0"
       VALUE "ProductVersion",		"@VERSION@" "\0"
