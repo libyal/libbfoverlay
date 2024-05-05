@@ -15,13 +15,11 @@ EXTRA_DIST = \
 	libbfoverlay/features.h.in \
 	libbfoverlay/types.h.in
 
-MAINTAINERCLEANFILES = \
+DISTCLEANFILES = \
+	libbfoverlay.h \
+	libbfoverlay/definitions.h \
+	libbfoverlay/features.h \
+	libbfoverlay/types.h \
+	Makefile \
 	Makefile.in
-
-distclean: clean
-	-rm -f libbfoverlay.h
-	-rm -f libbfoverlay/definitions.h
-	-rm -f libbfoverlay/features.h
-	-rm -f libbfoverlay/types.h
-	-rm -f Makefile
 

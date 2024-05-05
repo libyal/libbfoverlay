@@ -142,6 +142,7 @@ stamp-h[1-9]
 /tests/bfoverlay_test_support
 /tests/bfoverlay_test_tools_output
 /tests/bfoverlay_test_tools_signal
+/tests/notify_stream.log
 /tests/tmp*
 
 # Local library dependencies specific files
