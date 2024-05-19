@@ -44,7 +44,7 @@
 
 extern mount_handle_t *bfoverlaymount_mount_handle;
 
-#if defined( HAVE_LIBFUSE ) || defined( HAVE_LIBOSXFUSE )
+#if defined( HAVE_LIBFUSE ) || defined( HAVE_LIBFUSE3 ) || defined( HAVE_LIBOSXFUSE )
 
 #if ( SIZEOF_OFF_T != 8 ) && ( SIZEOF_OFF_T != 4 )
 #error Size of off_t not supported
@@ -255,11 +255,20 @@ int mount_fuse_filldir(
 
 		return( -1 );
 	}
+#if defined( HAVE_LIBFUSE3 )
+	if( filler(
+	     buffer,
+	     name,
+	     stat_info,
+	     0,
+	     0 ) == 1 )
+#else
 	if( filler(
 	     buffer,
 	     name,
 	     stat_info,
 	     0 ) == 1 )
+#endif
 	{
 		libcerror_error_set(
 		 error,
@@ -276,14 +285,25 @@ int mount_fuse_filldir(
 /* Changes the size of a file
  * Returns 0 if successful or a negative errno value otherwise
  */
+#if defined( HAVE_LIBFUSE3 )
+int mount_fuse_truncate(
+     const char *path,
+     off_t size,
+     struct fuse_file_info *file_info BFOVERLAYTOOLS_ATTRIBUTE_UNUSED )
+#else
 int mount_fuse_truncate(
      const char *path,
      off_t size )
+#endif
 {
 	libcerror_error_t *error       = NULL;
 	mount_file_entry_t *file_entry = NULL;
 	static char *function          = "mount_fuse_truncate";
 	int result                     = 0;
+
+#if defined( HAVE_LIBFUSE3 )
+	BFOVERLAYTOOLS_UNREFERENCED_PARAMETER( file_info )
+#endif
 
 #if defined( HAVE_DEBUG_OUTPUT )
 	if( libcnotify_verbose != 0 )
@@ -832,12 +852,22 @@ on_error:
 /* Reads a directory
  * Returns 0 if successful or a negative errno value otherwise
  */
+#if defined( HAVE_LIBFUSE3 )
+int mount_fuse_readdir(
+     const char *path,
+     void *buffer,
+     fuse_fill_dir_t filler,
+     off_t offset BFOVERLAYTOOLS_ATTRIBUTE_UNUSED,
+     struct fuse_file_info *file_info BFOVERLAYTOOLS_ATTRIBUTE_UNUSED,
+     enum fuse_readdir_flags flags BFOVERLAYTOOLS_ATTRIBUTE_UNUSED )
+#else
 int mount_fuse_readdir(
      const char *path,
      void *buffer,
      fuse_fill_dir_t filler,
      off_t offset BFOVERLAYTOOLS_ATTRIBUTE_UNUSED,
      struct fuse_file_info *file_info BFOVERLAYTOOLS_ATTRIBUTE_UNUSED )
+#endif
 {
 	struct stat *stat_info                = NULL;
 	libcerror_error_t *error              = NULL;
@@ -851,6 +881,10 @@ int mount_fuse_readdir(
 	int sub_file_entry_index              = 0;
 
 	BFOVERLAYTOOLS_UNREFERENCED_PARAMETER( offset )
+
+#if defined( HAVE_LIBFUSE3 )
+	BFOVERLAYTOOLS_UNREFERENCED_PARAMETER( flags )
+#endif
 
 #if defined( HAVE_DEBUG_OUTPUT )
 	if( libcnotify_verbose != 0 )
@@ -1221,9 +1255,16 @@ on_error:
 /* Retrieves the file stat info
  * Returns 0 if successful or a negative errno value otherwise
  */
+#if defined( HAVE_LIBFUSE3 )
+int mount_fuse_getattr(
+     const char *path,
+     struct stat *stat_info,
+     struct fuse_file_info *file_info BFOVERLAYTOOLS_ATTRIBUTE_UNUSED )
+#else
 int mount_fuse_getattr(
      const char *path,
      struct stat *stat_info )
+#endif
 {
 	libcerror_error_t *error       = NULL;
 	mount_file_entry_t *file_entry = NULL;
@@ -1234,6 +1275,10 @@ int mount_fuse_getattr(
 	uint64_t modification_time     = 0;
 	uint16_t file_mode             = 0;
 	int result                     = 0;
+
+#if defined( HAVE_LIBFUSE3 )
+	BFOVERLAYTOOLS_UNREFERENCED_PARAMETER( file_info )
+#endif
 
 #if defined( HAVE_DEBUG_OUTPUT )
 	if( libcnotify_verbose != 0 )
@@ -1491,5 +1536,5 @@ on_error:
 	return;
 }
 
-#endif /* defined( HAVE_LIBFUSE ) || defined( HAVE_LIBOSXFUSE ) */
+#endif /* defined( HAVE_LIBFUSE ) || defined( HAVE_LIBFUSE3 ) || defined( HAVE_LIBOSXFUSE ) */
 

@@ -146,11 +146,19 @@ int main( int argc, char * const argv[] )
 	int result                                     = 0;
 	int verbose                                    = 0;
 
-#if defined( HAVE_LIBFUSE ) || defined( HAVE_LIBOSXFUSE )
+#if defined( HAVE_LIBFUSE ) || defined( HAVE_LIBFUSE3 ) || defined( HAVE_LIBOSXFUSE )
 	struct fuse_operations bfoverlaymount_fuse_operations;
 
+#if defined( HAVE_LIBFUSE3 )
+	/* Need to set this to 1 even if there no arguments, otherwise this causes
+	 * fuse: empty argv passed to fuse_session_new()
+	 */
+	char *fuse_argv[ 2 ]                           = { program, NULL };
+	struct fuse_args bfoverlaymount_fuse_arguments = FUSE_ARGS_INIT(1, fuse_argv);
+#else
 	struct fuse_args bfoverlaymount_fuse_arguments = FUSE_ARGS_INIT(0, NULL);
 	struct fuse_chan *bfoverlaymount_fuse_channel  = NULL;
+#endif
 	struct fuse *bfoverlaymount_fuse_handle        = NULL;
 
 #elif defined( HAVE_LIBDOKAN )
@@ -343,7 +351,7 @@ int main( int argc, char * const argv[] )
 
 		goto on_error;
 	}
-#if defined( HAVE_LIBFUSE ) || defined( HAVE_LIBOSXFUSE )
+#if defined( HAVE_LIBFUSE ) || defined( HAVE_LIBFUSE3 ) || defined( HAVE_LIBOSXFUSE )
 	if( option_extended_options != NULL )
 	{
 		/* This argument is required but ignored
@@ -390,51 +398,45 @@ int main( int argc, char * const argv[] )
 
 		goto on_error;
 	}
-	bfoverlaymount_fuse_operations.getattr     = &mount_fuse_getattr;
-	bfoverlaymount_fuse_operations.readlink    = NULL;
-	bfoverlaymount_fuse_operations.getdir      = NULL;
-	bfoverlaymount_fuse_operations.mknod       = NULL;
-	bfoverlaymount_fuse_operations.mkdir       = NULL;
-	bfoverlaymount_fuse_operations.unlink      = NULL;
-	bfoverlaymount_fuse_operations.rmdir       = NULL;
-	bfoverlaymount_fuse_operations.symlink     = NULL;
-	bfoverlaymount_fuse_operations.rename      = NULL;
-	bfoverlaymount_fuse_operations.link        = NULL;
-	bfoverlaymount_fuse_operations.chmod       = NULL;
-	bfoverlaymount_fuse_operations.chown       = NULL;
-	bfoverlaymount_fuse_operations.truncate    = &mount_fuse_truncate;
-	bfoverlaymount_fuse_operations.utime       = NULL;
-	bfoverlaymount_fuse_operations.open        = &mount_fuse_open;
-	bfoverlaymount_fuse_operations.read        = &mount_fuse_read;
-	bfoverlaymount_fuse_operations.write       = &mount_fuse_write;
-	bfoverlaymount_fuse_operations.statfs      = NULL;
-	bfoverlaymount_fuse_operations.flush       = NULL;
-	bfoverlaymount_fuse_operations.release     = &mount_fuse_release;
-	bfoverlaymount_fuse_operations.fsync       = NULL;
-	bfoverlaymount_fuse_operations.setxattr    = NULL;
-	bfoverlaymount_fuse_operations.getxattr    = NULL;
-	bfoverlaymount_fuse_operations.listxattr   = NULL;
-	bfoverlaymount_fuse_operations.removexattr = NULL;
-	bfoverlaymount_fuse_operations.opendir     = &mount_fuse_opendir;
-	bfoverlaymount_fuse_operations.readdir     = &mount_fuse_readdir;
-	bfoverlaymount_fuse_operations.releasedir  = &mount_fuse_releasedir;
-	bfoverlaymount_fuse_operations.fsyncdir    = NULL;
-	bfoverlaymount_fuse_operations.init        = NULL;
-	bfoverlaymount_fuse_operations.destroy     = &mount_fuse_destroy;
-	bfoverlaymount_fuse_operations.access      = NULL;
-	bfoverlaymount_fuse_operations.create      = NULL;
-	bfoverlaymount_fuse_operations.ftruncate   = NULL;
-	bfoverlaymount_fuse_operations.fgetattr    = NULL;
-	bfoverlaymount_fuse_operations.lock        = NULL;
-	bfoverlaymount_fuse_operations.utimens     = NULL;
-	bfoverlaymount_fuse_operations.bmap        = NULL;
-	bfoverlaymount_fuse_operations.ioctl       = NULL;
-	bfoverlaymount_fuse_operations.poll        = NULL;
-	bfoverlaymount_fuse_operations.write_buf   = NULL;
-	bfoverlaymount_fuse_operations.read_buf    = NULL;
-	bfoverlaymount_fuse_operations.flock       = NULL;
-	bfoverlaymount_fuse_operations.fallocate   = NULL;
+	bfoverlaymount_fuse_operations.truncate   = &mount_fuse_truncate;
+	bfoverlaymount_fuse_operations.open       = &mount_fuse_open;
+	bfoverlaymount_fuse_operations.read       = &mount_fuse_read;
+	bfoverlaymount_fuse_operations.write      = &mount_fuse_write;
+	bfoverlaymount_fuse_operations.release    = &mount_fuse_release;
+	bfoverlaymount_fuse_operations.opendir    = &mount_fuse_opendir;
+	bfoverlaymount_fuse_operations.readdir    = &mount_fuse_readdir;
+	bfoverlaymount_fuse_operations.releasedir = &mount_fuse_releasedir;
+	bfoverlaymount_fuse_operations.getattr    = &mount_fuse_getattr;
+	bfoverlaymount_fuse_operations.destroy    = &mount_fuse_destroy;
 
+#if defined( HAVE_LIBFUSE3 )
+	bfoverlaymount_fuse_handle = fuse_new(
+	                              &bfoverlaymount_fuse_arguments,
+	                              &bfoverlaymount_fuse_operations,
+	                              sizeof( struct fuse_operations ),
+	                              bfoverlaymount_mount_handle );
+
+	if( bfoverlaymount_fuse_handle == NULL )
+	{
+		fprintf(
+		 stderr,
+		 "Unable to create fuse handle.\n" );
+
+		goto on_error;
+	}
+	result = fuse_mount(
+	          bfoverlaymount_fuse_handle,
+	          mount_point );
+
+	if( result != 0 )
+	{
+		fprintf(
+		 stderr,
+		 "Unable to fuse mount file system.\n" );
+
+		goto on_error;
+	}
+#else
 	bfoverlaymount_fuse_channel = fuse_mount(
 	                               mount_point,
 	                               &bfoverlaymount_fuse_arguments );
@@ -462,6 +464,8 @@ int main( int argc, char * const argv[] )
 
 		goto on_error;
 	}
+#endif /* defined( HAVE_LIBFUSE3 ) */
+
 	if( verbose == 0 )
 	{
 		if( fuse_daemonize(
@@ -589,10 +593,16 @@ int main( int argc, char * const argv[] )
 
 #endif /* ( DOKAN_VERSION >= 600 ) && ( DOKAN_VERSION < 800 ) */
 
+#if DOKAN_MINIMUM_COMPATIBLE_VERSION >= 200
+	DokanInit();
+#endif
 	result = DokanMain(
 	          &bfoverlaymount_dokan_options,
 	          &bfoverlaymount_dokan_operations );
 
+#if DOKAN_MINIMUM_COMPATIBLE_VERSION >= 200
+	DokanShutdown();
+#endif
 	switch( result )
 	{
 		case DOKAN_SUCCESS:
@@ -650,7 +660,7 @@ int main( int argc, char * const argv[] )
 
 	return( EXIT_FAILURE );
 
-#endif /* defined( HAVE_LIBFUSE ) || defined( HAVE_LIBOSXFUSE ) */
+#endif /* defined( HAVE_LIBFUSE ) || defined( HAVE_LIBFUSE3 ) || defined( HAVE_LIBOSXFUSE ) */
 
 on_error:
 	if( error != NULL )
@@ -660,7 +670,7 @@ on_error:
 		libcerror_error_free(
 		 &error );
 	}
-#if defined( HAVE_LIBFUSE ) || defined( HAVE_LIBOSXFUSE )
+#if defined( HAVE_LIBFUSE ) || defined( HAVE_LIBFUSE3 ) || defined( HAVE_LIBOSXFUSE )
 	if( bfoverlaymount_fuse_handle != NULL )
 	{
 		fuse_destroy(
