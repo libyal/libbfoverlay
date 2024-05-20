@@ -521,8 +521,13 @@ int main( int argc, char * const argv[] )
 		goto on_error;
 	}
 	bfoverlaymount_dokan_options.Version     = DOKAN_VERSION;
-	bfoverlaymount_dokan_options.ThreadCount = 0;
 	bfoverlaymount_dokan_options.MountPoint  = mount_point;
+
+#if DOKAN_MINIMUM_COMPATIBLE_VERSION >= 200
+	bfoverlaymount_dokan_options.SingleThread = TRUE;
+#else
+	bfoverlaymount_dokan_options.ThreadCount  = 0;
+#endif
 
 	if( verbose != 0 )
 	{
