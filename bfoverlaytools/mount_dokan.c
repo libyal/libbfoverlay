@@ -1,7 +1,7 @@
 /*
  * Mount tool dokan functions
  *
- * Copyright (C) 2020-2024, Joachim Metz <joachim.metz@gmail.com>
+ * Copyright (C) 2020-2025, Joachim Metz <joachim.metz@gmail.com>
  *
  * Refer to AUTHORS for acknowledgements.
  *
@@ -699,7 +699,7 @@ on_error:
 
 #endif /* ( DOKAN_VERSION >= 600 ) && ( DOKAN_VERSION < 800 ) */
 
-/* Closes a file or direcotry
+/* Closes a file or directory
  * Returns 0 if successful or an error code otherwise
  */
 #if ( DOKAN_VERSION >= 600 ) && ( DOKAN_VERSION < 800 )
