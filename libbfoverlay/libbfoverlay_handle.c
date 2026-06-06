@@ -2297,7 +2297,6 @@ ssize_t libbfoverlay_internal_handle_read_buffer(
 
 				return( -1 );
 			}
-			read_count = (ssize_t) read_size;
 		}
 		else
 		{

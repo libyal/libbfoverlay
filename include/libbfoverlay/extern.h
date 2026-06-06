@@ -31,14 +31,17 @@
  */
 #if defined( LIBBFOVERLAY_DLL_EXPORT )
 #define LIBBFOVERLAY_EXTERN __declspec(dllexport)
+#define LIBBFOVERLAY_EXTERN_VARIABLE extern __declspec(dllexport)
 
 #elif defined( LIBBFOVERLAY_DLL_IMPORT )
-#define LIBBFOVERLAY_EXTERN extern __declspec(dllimport)
+#define LIBBFOVERLAY_EXTERN __declspec(dllimport)
+#define LIBBFOVERLAY_EXTERN_VARIABLE extern __declspec(dllimport)
 
 #else
 #define LIBBFOVERLAY_EXTERN extern
+#define LIBBFOVERLAY_EXTERN_VARIABLE extern
 
-#endif
+#endif /* defined( LIBBFOVERLAY_DLL_EXPORT ) */
 
 #endif /* !defined( _LIBBFOVERLAY_EXTERN_H ) */
 

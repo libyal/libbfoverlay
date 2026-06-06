@@ -17,6 +17,9 @@ AM_CPPFLAGS = \
 	@PTHREAD_CPPFLAGS@ \
 	@LIBBFOVERLAY_DLL_IMPORT@
 
+AM_TESTS_ENVIRONMENT = \
+	export TESTS_USE_WINAPI="@TESTS_USE_WINAPI@";
+
 TESTS = \
 	test_library.sh \
 	test_tools.sh
@@ -224,7 +227,8 @@ bfoverlay_test_tools_output_SOURCES = \
 
 bfoverlay_test_tools_output_LDADD = \
 	../libbfoverlay/libbfoverlay.la \
-	@LIBCERROR_LIBADD@
+	@LIBCERROR_LIBADD@ \
+	@LIBINTL@
 
 bfoverlay_test_tools_signal_SOURCES = \
 	../bfoverlaytools/bfoverlaytools_signal.c ../bfoverlaytools/bfoverlaytools_signal.h \

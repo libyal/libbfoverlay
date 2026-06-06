@@ -292,10 +292,6 @@ int libbfoverlay_cow_file_open(
 
 		goto on_error;
 	}
-	if( ( number_of_blocks % file_header->block_size ) != 0 )
-	{
-		number_of_blocks += 1;
-	}
 	cow_file->data_size                  = file_header->data_size;
 	cow_file->number_of_allocated_blocks = file_header->number_of_allocated_blocks;
 	cow_file->last_data_block_number     = (uint32_t) ( file_size / cow_file->block_size );
@@ -724,6 +720,28 @@ int libbfoverlay_cow_file_allocate_block_for_offset(
 
 		return( -1 );
 	}
+	if( cow_file->number_of_allocated_blocks == 0 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+		 "%s: invalid COW file - number of allocated blocks value out of bounds.",
+		 function );
+
+		return( -1 );
+	}
+	if( cow_file->allocation_table_block->number_of_entries == 0 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+		 "%s: invalid COW file - invalid allocation table block - number of entries value out of bounds.",
+		 function );
+
+		return( -1 );
+	}
 	if( offset < 0 )
 	{
 		libcerror_error_set(
@@ -767,6 +785,18 @@ int libbfoverlay_cow_file_allocate_block_for_offset(
 		}
 	}
 	blocks_per_entry = cow_file->number_of_allocated_blocks / cow_file->allocation_table_block->number_of_entries;
+
+	if( blocks_per_entry == 0 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+		 "%s: blocks per entry value out of bounds.",
+		 function );
+
+		return( -1 );
+	}
 	entry_index      = table_index / blocks_per_entry;
 	safe_file_offset = cow_file->l1_allocation_table_offset + ( entry_index * sizeof( bfoverlay_cow_allocation_table_block_entry_t ) );
 
@@ -934,6 +964,39 @@ int libbfoverlay_cow_file_get_block_at_offset(
 
 		return( -1 );
 	}
+	if( cow_file->allocation_table_block == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
+		 "%s: invalid COW file - missing allocation table block.",
+		 function );
+
+		return( -1 );
+	}
+	if( cow_file->number_of_allocated_blocks == 0 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+		 "%s: invalid COW file - number of allocated blocks value out of bounds.",
+		 function );
+
+		return( -1 );
+	}
+	if( cow_file->allocation_table_block->number_of_entries == 0 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+		 "%s: invalid COW file - invalid allocation table block - number of entries value out of bounds.",
+		 function );
+
+		return( -1 );
+	}
 	if( offset < 0 )
 	{
 		libcerror_error_set(
@@ -981,6 +1044,18 @@ int libbfoverlay_cow_file_get_block_at_offset(
 	table_index = offset / cow_file->block_size;
 
 	blocks_per_entry = cow_file->number_of_allocated_blocks / cow_file->allocation_table_block->number_of_entries;
+
+	if( blocks_per_entry == 0 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+		 "%s: blocks per entry value out of bounds.",
+		 function );
+
+		return( -1 );
+	}
 	entry_index      = table_index / blocks_per_entry;
 	safe_file_offset = cow_file->l1_allocation_table_offset + ( entry_index * sizeof( bfoverlay_cow_allocation_table_block_entry_t ) );
 

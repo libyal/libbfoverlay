@@ -24,21 +24,28 @@
 
 #include <common.h>
 
+#if !defined( __CYGWIN__ ) && !defined( _WIN32 ) && defined( __has_attribute )
+#if __has_attribute( visibility )
+#define LIBBFOVERLAY_INTERNAL	__attribute__((visibility("hidden"))) extern
+
+#else
+#define LIBBFOVERLAY_INTERNAL	extern
+
+#endif /* __has_attribute( visibility ) */
+#else
+#define LIBBFOVERLAY_INTERNAL	extern
+
+#endif /* !defined( __CYGWIN__ ) && !defined( _WIN32 ) && defined( __has_attribute ) */
+
 /* Define HAVE_LOCAL_LIBBFOVERLAY for local use of libbfoverlay
  */
 #if !defined( HAVE_LOCAL_LIBBFOVERLAY )
 
 #include <libbfoverlay/extern.h>
 
-#if defined( __CYGWIN__ ) || defined( __MINGW32__ )
-#define LIBBFOVERLAY_EXTERN_VARIABLE	extern
-#else
-#define LIBBFOVERLAY_EXTERN_VARIABLE	LIBBFOVERLAY_EXTERN
-#endif
-
 #else
 #define LIBBFOVERLAY_EXTERN		/* extern */
-#define LIBBFOVERLAY_EXTERN_VARIABLE	extern
+#define LIBBFOVERLAY_EXTERN_VARIABLE	LIBBFOVERLAY_INTERNAL
 
 #endif /* !defined( HAVE_LOCAL_LIBBFOVERLAY ) */
 
