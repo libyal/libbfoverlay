@@ -169,7 +169,7 @@ int libbfoverlay_descriptor_file_free(
 }
 
 /* Reads the descriptor file
- * Returns the 1 if succesful or -1 on error
+ * Returns the 1 if successful or -1 on error
  */
 int libbfoverlay_descriptor_file_read_data(
      libbfoverlay_descriptor_file_t *descriptor_file,
