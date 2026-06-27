@@ -1,8 +1,9 @@
 man_MANS = \
+	bfoverlaymount.1 \
 	libbfoverlay.3
 
 EXTRA_DIST = \
-	libbfoverlay.3
+	$(man_MANS)
 
 DISTCLEANFILES = \
 	Makefile \

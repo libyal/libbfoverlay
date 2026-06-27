@@ -77,6 +77,7 @@ rm -rf %{buildroot}
 %license COPYING COPYING.LESSER
 %doc AUTHORS README
 %{_bindir}/*
+%{_mandir}/man1/*
 
 %changelog
 * @SPEC_DATE@ Joachim Metz <joachim.metz@gmail.com> @VERSION@-1

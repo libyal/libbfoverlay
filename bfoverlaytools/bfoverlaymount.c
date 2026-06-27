@@ -59,37 +59,6 @@
 mount_handle_t *bfoverlaymount_mount_handle = NULL;
 int bfoverlaymount_abort                    = 0;
 
-/* Prints usage information
- */
-void usage_fprint(
-      FILE *stream )
-{
-	if( stream == NULL )
-	{
-		return;
-	}
-	fprintf( stream, "Use bfoverlaymount to mount a basic file overlay\n\n" );
-
-#if defined( HAVE_LIBFUSE ) || defined( HAVE_LIBFUSE3 ) || defined( HAVE_LIBOSXFUSE )
-	fprintf( stream, "Usage: bfoverlaymount [ -T file ] [ -X extended_options ] [ -hvV ] descriptor_file\n"
-	                 "                      mount_point\n\n" );
-#else
-	fprintf( stream, "Usage: bfoverlaymount [ -T file ] [ -hvV ] descriptor_file mount_point\n\n");
-#endif
-	fprintf( stream, "\tdescriptor_file:  basic file overlay descriptor file\n\n" );
-	fprintf( stream, "\tmount_point:      the directory to serve as mount point\n\n" );
-
-	fprintf( stream, "\t-h:               shows this help\n" );
-	fprintf( stream, "\t-T:               track IO traces in a seperate file\n" );
-	fprintf( stream, "\t-v:               verbose output to stderr, while bfoverlaymount will remain running\n"
-	                 "\t                  in the foreground\n" );
-	fprintf( stream, "\t-V:               print version\n" );
-
-#if defined( HAVE_LIBFUSE ) || defined( HAVE_LIBFUSE3 ) || defined( HAVE_LIBOSXFUSE )
-	fprintf( stream, "\t-X:               extended options to pass to sub system\n" );
-#endif
-}
-
 /* Signal handler for bfoverlaymount
  */
 void bfoverlaymount_signal_handler(
@@ -142,9 +111,24 @@ int wmain( int argc, wchar_t * const argv[] )
 int main( int argc, char * const argv[] )
 #endif
 {
+	const char *description               = \
+		"Use bfoverlaymount to mount basic file overlays.";
+
+	bfoverlaytools_option_t options[ ] = {
+		{ 'h', NULL, "shows this help" },
+		{ 'T', "file", "track IO traces in a seperate file" },
+		{ 'v', NULL, "verbose output to stderr, while bfoverlaymount will remain running in the foreground" },
+		{ 'V', NULL, "print version" },
+#if defined( HAVE_LIBFUSE ) || defined( HAVE_LIBFUSE3 ) || defined( HAVE_LIBOSXFUSE )
+		{ 'X', "extended_options", "extended options to pass to sub system" },
+#endif
+		{ 0, "descriptor file", "basic file overlay descriptor file" },
+		{ 0, "mount_point", "the directory to serve as mount point" },
+	};
+	system_character_t options_string[ 32 ];
+
 	libbfoverlay_error_t *error                    = NULL;
 	system_character_t *option_io_trace_file       = NULL;
-	system_character_t *options                    = NULL;
 	const system_character_t *path_prefix          = NULL;
 	const system_character_t *path_suffix          = NULL;
 	system_character_t *source                     = NULL;
@@ -152,6 +136,7 @@ int main( int argc, char * const argv[] )
 	system_integer_t option                        = 0;
 	size_t path_prefix_size                        = 0;
 	size_t path_suffix_size                        = 0;
+	int number_of_options                          = (int) ( sizeof( options ) / sizeof( bfoverlaytools_option_t ) );
 	int verbose                                    = 0;
 
 #if defined( HAVE_LIBFUSE ) || defined( HAVE_LIBFUSE3 ) || defined( HAVE_LIBOSXFUSE ) || defined( HAVE_LIBDOKAN )
@@ -216,16 +201,22 @@ int main( int argc, char * const argv[] )
 	 stdout,
 	 program );
 
-/* TODO add support to set suffix */
-#if defined( HAVE_LIBFUSE ) || defined( HAVE_LIBFUSE3 ) || defined( HAVE_LIBOSXFUSE )
-	options = _SYSTEM_STRING( "hT:vVX:" );
-#else
-	options = _SYSTEM_STRING( "hT:vV" );
-#endif
+	if( bfoverlaytools_getopt_get_options_string(
+	     options,
+	     number_of_options,
+	     options_string,
+	     32 ) != 1 )
+	{
+		fprintf(
+		 stderr,
+		 "Unable to determine options string.\n" );
+
+		goto on_error;
+	}
 	while( ( option = bfoverlaytools_getopt(
 	                   argc,
 	                   argv,
-	                   options ) ) != (system_integer_t) -1 )
+	                   options_string ) ) != (system_integer_t) -1 )
 	{
 		switch( option )
 		{
@@ -236,14 +227,22 @@ int main( int argc, char * const argv[] )
 				 "Invalid argument: %" PRIs_SYSTEM "\n",
 				 argv[ optind - 1 ] );
 
-				usage_fprint(
-				 stdout );
+				bfoverlaytools_getopt_usage_fprint(
+				 stdout,
+				 program,
+				 description,
+				 options,
+				 number_of_options );
 
 				return( EXIT_FAILURE );
 
 			case (system_integer_t) 'h':
-				usage_fprint(
-				 stdout );
+				bfoverlaytools_getopt_usage_fprint(
+				 stdout,
+				 program,
+				 description,
+				 options,
+				 number_of_options );
 
 				return( EXIT_SUCCESS );
 
@@ -277,8 +276,12 @@ int main( int argc, char * const argv[] )
 		 stderr,
 		 "Missing source descriptor file.\n" );
 
-		usage_fprint(
-		 stdout );
+		bfoverlaytools_getopt_usage_fprint(
+		 stdout,
+		 program,
+		 description,
+		 options,
+		 number_of_options );
 
 		return( EXIT_FAILURE );
 	}
@@ -290,8 +293,12 @@ int main( int argc, char * const argv[] )
 		 stderr,
 		 "Missing mount point.\n" );
 
-		usage_fprint(
-		 stdout );
+		bfoverlaytools_getopt_usage_fprint(
+		 stdout,
+		 program,
+		 description,
+		 options,
+		 number_of_options );
 
 		return( EXIT_FAILURE );
 	}
@@ -553,15 +560,14 @@ int main( int argc, char * const argv[] )
 
 		goto on_error;
 	}
-	bfoverlaymount_dokan_options.Version     = DOKAN_VERSION;
-	bfoverlaymount_dokan_options.MountPoint  = mount_point;
+	bfoverlaymount_dokan_options.Version    = DOKAN_VERSION;
+	bfoverlaymount_dokan_options.MountPoint = mount_point;
 
 #if DOKAN_MINIMUM_COMPATIBLE_VERSION >= 200
 	bfoverlaymount_dokan_options.SingleThread = TRUE;
 #else
 	bfoverlaymount_dokan_options.ThreadCount  = 0;
 #endif
-
 	if( verbose != 0 )
 	{
 		bfoverlaymount_dokan_options.Options |= DOKAN_OPTION_STDERR;
@@ -694,7 +700,7 @@ int main( int argc, char * const argv[] )
 #else
 	fprintf(
 	 stderr,
-	 "No sub system to mount BFOVERLAY format.\n" );
+	 "No sub system to mount basic file overlays format.\n" );
 
 	return( EXIT_FAILURE );
 
