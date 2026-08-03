@@ -529,6 +529,9 @@ int main( int argc, char * const argv[] )
 
 		goto on_error;
 	}
+	fuse_unmount(
+	 bfoverlaymount_fuse_handle );
+
 	fuse_destroy(
 	 bfoverlaymount_fuse_handle );
 
