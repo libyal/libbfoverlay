@@ -40,6 +40,7 @@
 #include "bfoverlaytools_libbfoverlay.h"
 #include "bfoverlaytools_libcdata.h"
 #include "bfoverlaytools_libcerror.h"
+#include "bfoverlaytools_libcthreads.h"
 #include "mount_file_system.h"
 
 /* Creates a file system
@@ -214,6 +215,13 @@ int mount_file_system_initialize(
 on_error:
 	if( *file_system != NULL )
 	{
+		if( ( *file_system )->handles_array != NULL )
+		{
+			libcdata_array_free(
+			 &( ( *file_system )->handles_array ),
+			 NULL,
+			 NULL );
+		}
 		memory_free(
 		 *file_system );
 
@@ -269,6 +277,24 @@ int mount_file_system_free(
 
 			result = -1;
 		}
+#if defined( HAVE_MULTI_THREAD_SUPPORT )
+		if( ( *file_system )->io_trace_mutex != NULL )
+		{
+			if( libcthreads_mutex_free(
+			     &( ( *file_system )->io_trace_mutex ),
+			     error ) != 1 )
+			{
+				libcerror_error_set(
+				 error,
+				 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+				 LIBCERROR_RUNTIME_ERROR_FINALIZE_FAILED,
+				 "%s: unable to free IO trace mutex.",
+				 function );
+
+				result = -1;
+			}
+		}
+#endif
 		if( ( *file_system )->io_trace_file_stream != NULL )
 		{
 			if( file_stream_close(
@@ -411,6 +437,21 @@ int mount_file_system_set_io_trace_file(
 
 		return( -1 );
 	}
+#if defined( HAVE_MULTI_THREAD_SUPPORT )
+	if( libcthreads_mutex_initialize(
+	     &( file_system->io_trace_mutex ),
+	     error ) != 1 )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_INITIALIZE_FAILED,
+		 "%s: unable to initialize IO trace mutex.",
+		 function );
+
+		goto on_error;
+	}
+#endif
 #if defined( HAVE_WIDE_SYSTEM_CHARACTER )
 	file_system->io_trace_file_stream = file_stream_open_wide(
 	                                     filename,
@@ -429,9 +470,20 @@ int mount_file_system_set_io_trace_file(
 		 "%s: unable to open IO trace file stream.",
 		 function );
 
-		return( -1 );
+		goto on_error;
 	}
 	return( 1 );
+
+on_error:
+#if defined( HAVE_MULTI_THREAD_SUPPORT )
+	if( file_system->io_trace_mutex != NULL )
+	{
+		libcthreads_mutex_free(
+		 &( file_system->io_trace_mutex ),
+		 NULL );
+	}
+#endif
+	return( -1 );
 }
 
 /* Sets the path prefix
@@ -1444,6 +1496,21 @@ int mount_file_system_write_io_trace(
 	}
 	if( file_system->io_trace_file_stream != NULL )
 	{
+#if defined( HAVE_MULTI_THREAD_SUPPORT )
+		if( libcthreads_mutex_grab(
+		     file_system->io_trace_mutex,
+		     error ) != 1 )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+			 LIBCERROR_RUNTIME_ERROR_SET_FAILED,
+			 "%s: unable to grab IO trace mutex.",
+			 function );
+
+			return( -1 );
+		}
+#endif
 		fprintf(
 		 file_system->io_trace_file_stream,
 		 "operation: %s at offset: %" PRIi64 " (0x%08" PRIx64 ") with request size: %" PRIzd " and result size: %" PRIzd "\n\n",
@@ -1461,6 +1528,21 @@ int mount_file_system_write_io_trace(
 			 data,
 			 data_size );
 		}
+#if defined( HAVE_MULTI_THREAD_SUPPORT )
+		if( libcthreads_mutex_release(
+		     file_system->io_trace_mutex,
+		     error ) != 1 )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+			 LIBCERROR_RUNTIME_ERROR_SET_FAILED,
+			 "%s: unable to release IO trace mutex.",
+			 function );
+
+			return( -1 );
+		}
+#endif
 	}
 	return( 1 );
 }

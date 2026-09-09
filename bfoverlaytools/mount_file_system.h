@@ -27,6 +27,7 @@
 
 #include "bfoverlaytools_libcdata.h"
 #include "bfoverlaytools_libcerror.h"
+#include "bfoverlaytools_libcthreads.h"
 
 #if defined( __cplusplus )
 extern "C" {
@@ -59,6 +60,12 @@ struct mount_file_system
 	/* The handles array
 	 */
 	libcdata_array_t *handles_array;
+
+#if defined( HAVE_MULTI_THREAD_SUPPORT )
+	/* The IO trace mutex
+	 */
+	libcthreads_mutex_t *io_trace_mutex;
+#endif
 
 	/* The IO trace file stream
 	 */

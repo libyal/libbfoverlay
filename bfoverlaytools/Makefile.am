@@ -2,6 +2,7 @@ AM_CPPFLAGS = \
 	-I../include -I$(top_srcdir)/include \
 	-I../common -I$(top_srcdir)/common \
 	@LIBCERROR_CPPFLAGS@ \
+	@LIBCTHREADS_CPPFLAGS@ \
 	@LIBCDATA_CPPFLAGS@ \
 	@LIBCLOCALE_CPPFLAGS@ \
 	@LIBCNOTIFY_CPPFLAGS@ \
@@ -11,7 +12,8 @@ AM_CPPFLAGS = \
 	@LIBCPATH_CPPFLAGS@ \
 	@LIBBFIO_CPPFLAGS@ \
 	@LIBFUSE_CPPFLAGS@ \
-	@LIBBFOVERLAY_DLL_IMPORT@
+	@LIBBFOVERLAY_DLL_IMPORT@ \
+	@PTHREAD_CPPFLAGS@
 
 AM_LDFLAGS = @STATIC_LDFLAGS@
 
@@ -28,6 +30,7 @@ bfoverlaymount_SOURCES = \
 	bfoverlaytools_libclocale.h \
 	bfoverlaytools_libcnotify.h \
 	bfoverlaytools_libcpath.h \
+	bfoverlaytools_libcthreads.h \
 	bfoverlaytools_libbfoverlay.h \
 	bfoverlaytools_libuna.h \
 	bfoverlaytools_output.c bfoverlaytools_output.h \
@@ -46,8 +49,10 @@ bfoverlaymount_LDADD = \
 	@LIBCLOCALE_LIBADD@ \
 	@LIBCDATA_LIBADD@ \
 	../libbfoverlay/libbfoverlay.la \
+	@LIBCTHREADS_LIBADD@ \
 	@LIBCERROR_LIBADD@ \
-	@LIBINTL@
+	@LIBINTL@ \
+	@PTHREAD_LIBADD@
 
 CLEANFILES = \
 	*.exe

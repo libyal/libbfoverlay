@@ -2890,26 +2890,6 @@ ssize_t libbfoverlay_internal_handle_write_buffer(
 		buffer_offset                   += write_size;
 		internal_handle->current_offset += write_size;
 	}
-	if( (size64_t) internal_handle->current_offset > internal_handle->size )
-	{
-		if( libbfoverlay_cow_file_set_data_size(
-		     internal_handle->cow_file,
-		     internal_handle->data_file_io_pool,
-		     internal_handle->cow_file_io_pool_entry,
-		     (size64_t) internal_handle->current_offset,
-		     error ) != 1 )
-		{
-			libcerror_error_set(
-			 error,
-			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
-			 LIBCERROR_RUNTIME_ERROR_SET_FAILED,
-			 "%s: unable to set data size in COW file.",
-			 function );
-
-			return( -1 );
-		}
-		internal_handle->size = (size64_t) internal_handle->current_offset;
-	}
 	return( (ssize_t) buffer_offset );
 }
 
