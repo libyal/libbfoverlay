@@ -53,10 +53,20 @@ struct bfoverlay_cow_file_header
 	 */
 	uint8_t block_size[ 4 ];
 
-	/* Number of allocated blocks
+	/* Padding
 	 * Consists of 4 bytes
 	 */
-	uint8_t number_of_allocated_blocks[ 4 ];
+	uint8_t padding1[ 4 ];
+
+	/* Number of allocated blocks
+	 * Consists of 8 bytes
+	 */
+	uint8_t number_of_allocated_blocks[ 8 ];
+
+	/* Padding
+	 * Consists of 8 bytes
+	 */
+	uint8_t padding2[ 8 ];
 };
 
 #if defined( __cplusplus )

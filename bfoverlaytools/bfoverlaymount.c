@@ -111,18 +111,19 @@ int wmain( int argc, wchar_t * const argv[] )
 int main( int argc, char * const argv[] )
 #endif
 {
-	const char *description               = \
+	const char *description = \
 		"Use bfoverlaymount to mount basic file overlays.";
 
 	bfoverlaytools_option_t options[ ] = {
 		{ 'h', NULL, "shows this help" },
+		{ 'S', "suffix", "suffix of virtual file" },
 		{ 'T', "file", "track IO traces in a seperate file" },
 		{ 'v', NULL, "verbose output to stderr, while bfoverlaymount will remain running in the foreground" },
 		{ 'V', NULL, "print version" },
 #if defined( HAVE_LIBFUSE ) || defined( HAVE_LIBFUSE3 ) || defined( HAVE_LIBOSXFUSE )
 		{ 'X', "extended_options", "extended options to pass to sub system" },
 #endif
-		{ 0, "descriptor file", "basic file overlay descriptor file" },
+		{ 0, "descriptor_file", "basic file overlay descriptor file" },
 		{ 0, "mount_point", "the directory to serve as mount point" },
 	};
 	system_character_t options_string[ 32 ];
@@ -245,6 +246,11 @@ int main( int argc, char * const argv[] )
 				 number_of_options );
 
 				return( EXIT_SUCCESS );
+
+			case (system_integer_t) 'S':
+				path_suffix = optarg;
+
+				break;
 
 			case (system_integer_t) 'T':
 				option_io_trace_file = optarg;

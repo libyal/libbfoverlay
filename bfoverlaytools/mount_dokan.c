@@ -58,6 +58,10 @@ extern mount_handle_t *bfoverlaymount_mount_handle;
 #define DOKAN_MAX_PATH MAX_PATH
 #endif
 
+/* Experimental
+#define DOKAN_WRITE_SUPPORT 1
+*/
+
 /* Sets the values in a file information structure
  * The time values contain an unsigned 64-bit FILETIME timestamp
  * Returns 1 if successful or -1 on error
@@ -531,10 +535,12 @@ NTSTATUS __stdcall mount_dokan_ZwCreateFile(
 
 		goto on_error;
 	}
+#if !defined( DOKAN_WRITE_SUPPORT )
 	if( ( desired_access & GENERIC_WRITE ) != 0 )
 	{
 		return( STATUS_MEDIA_WRITE_PROTECTED );
 	}
+#endif
 	/* Ignore the share_mode
 	 */
 	if( creation_disposition == FILE_CREATE )
@@ -942,7 +948,7 @@ int __stdcall mount_dokan_WriteFile(
                DWORD number_of_bytes_to_write,
                DWORD *number_of_bytes_written,
                LONGLONG offset,
-               DOKAN_FILE_INFO *file_info );
+               DOKAN_FILE_INFO *file_info )
 #else
 NTSTATUS __stdcall mount_dokan_WriteFile(
                     const wchar_t *path,
@@ -950,7 +956,7 @@ NTSTATUS __stdcall mount_dokan_WriteFile(
                     DWORD number_of_bytes_to_write,
                     DWORD *number_of_bytes_written,
                     LONGLONG offset,
-                    DOKAN_FILE_INFO *file_info );
+                    DOKAN_FILE_INFO *file_info )
 #endif
 {
 	libcerror_error_t *error = NULL;
@@ -1780,8 +1786,11 @@ NTSTATUS __stdcall mount_dokan_GetVolumeInformation(
 	{
 		*file_system_flags = FILE_CASE_SENSITIVE_SEARCH
 		                   | FILE_CASE_PRESERVED_NAMES
-		                   | FILE_UNICODE_ON_DISK
-		                   | FILE_READ_ONLY_VOLUME;
+		                   | FILE_UNICODE_ON_DISK;
+
+#if !defined( DOKAN_WRITE_SUPPORT )
+		*file_system_flags |= FILE_READ_ONLY_VOLUME;
+#endif
 	}
 	name      = L"Dokan";
 	name_size = 1 + wide_string_length(

@@ -2,7 +2,7 @@ AC_PREREQ([2.71])
 
 AC_INIT(
   [libbfoverlay],
-  [20260803],
+  [20260809],
   [https://github.com/libyal/libbfoverlay/issues])
 
 AC_CONFIG_SRCDIR(

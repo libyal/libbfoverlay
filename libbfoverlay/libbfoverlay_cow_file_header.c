@@ -220,7 +220,7 @@ int libbfoverlay_cow_file_header_read_data(
 	 ( (bfoverlay_cow_file_header_t *) data )->block_size,
 	 cow_file_header->block_size );
 
-	byte_stream_copy_to_uint32_big_endian(
+	byte_stream_copy_to_uint64_big_endian(
 	 ( (bfoverlay_cow_file_header_t *) data )->number_of_allocated_blocks,
 	 cow_file_header->number_of_allocated_blocks );
 
@@ -228,9 +228,20 @@ int libbfoverlay_cow_file_header_read_data(
 	if( libcnotify_verbose != 0 )
 	{
 		libcnotify_printf(
-		 "%s: signature\t\t\t: %s\n",
+		 "%s: signature\t\t\t: %c%c%c%c%c%c%c%c%c%c%c%c\n",
 		 function,
-		 ( (bfoverlay_cow_file_header_t *) data )->signature );
+		 ( (bfoverlay_cow_file_header_t *) data )->signature[ 0 ],
+		 ( (bfoverlay_cow_file_header_t *) data )->signature[ 1 ],
+		 ( (bfoverlay_cow_file_header_t *) data )->signature[ 2 ],
+		 ( (bfoverlay_cow_file_header_t *) data )->signature[ 3 ],
+		 ( (bfoverlay_cow_file_header_t *) data )->signature[ 4 ],
+		 ( (bfoverlay_cow_file_header_t *) data )->signature[ 5 ],
+		 ( (bfoverlay_cow_file_header_t *) data )->signature[ 6 ],
+		 ( (bfoverlay_cow_file_header_t *) data )->signature[ 7 ],
+		 ( (bfoverlay_cow_file_header_t *) data )->signature[ 8 ],
+		 ( (bfoverlay_cow_file_header_t *) data )->signature[ 9 ],
+		 ( (bfoverlay_cow_file_header_t *) data )->signature[ 10 ],
+		 ( (bfoverlay_cow_file_header_t *) data )->signature[ 11 ] );
 
 		libcnotify_printf(
 		 "%s: format version\t\t\t: %" PRIu32 "\n",
@@ -248,7 +259,7 @@ int libbfoverlay_cow_file_header_read_data(
 		 cow_file_header->block_size );
 
 		libcnotify_printf(
-		 "%s: number of allocated blocks\t: %" PRIu32 "\n",
+		 "%s: number of allocated blocks\t: %" PRIu64 "\n",
 		 function,
 		 cow_file_header->number_of_allocated_blocks );
 
@@ -374,9 +385,14 @@ int libbfoverlay_cow_file_header_write_file_io_pool(
 
 		return( -1 );
 	}
-	cow_file_header->block_size                 = 4096;
-	cow_file_header->number_of_allocated_blocks = (uint32_t) ( cow_file_header->block_size - sizeof( bfoverlay_cow_file_header_t ) ) / sizeof( bfoverlay_cow_allocation_table_block_entry_t );
+	cow_file_header->block_size = 4096;
 
+	cow_file_header->number_of_allocated_blocks = cow_file_header->data_size / cow_file_header->block_size;
+
+	if( ( cow_file_header->data_size % cow_file_header->block_size ) != 0 )
+	{
+		cow_file_header->number_of_allocated_blocks += 1;
+	}
 	if( memory_copy(
 	     cow_file_header_data,
 	     "# BFO-COW-FH",
@@ -417,7 +433,7 @@ int libbfoverlay_cow_file_header_write_file_io_pool(
 	 ( (bfoverlay_cow_file_header_t *) cow_file_header_data )->block_size,
 	 cow_file_header->block_size );
 
-	byte_stream_copy_from_uint32_big_endian(
+	byte_stream_copy_from_uint64_big_endian(
 	 ( (bfoverlay_cow_file_header_t *) cow_file_header_data )->number_of_allocated_blocks,
 	 cow_file_header->number_of_allocated_blocks );
 

@@ -2159,6 +2159,7 @@ ssize_t libbfoverlay_internal_handle_read_buffer(
 	static char *function          = "libbfoverlay_internal_handle_read_buffer";
 	size_t buffer_offset           = 0;
 	size_t cow_block_offset        = 0;
+	size_t cow_block_size          = 0;
 	size_t read_size               = 0;
 	ssize_t read_count             = 0;
 	off64_t cow_block_end_offset   = 0;
@@ -2255,6 +2256,19 @@ ssize_t libbfoverlay_internal_handle_read_buffer(
 		}
 		if( result != 0 )
 		{
+#if defined( HAVE_DEBUG_OUTPUT )
+			if( libcnotify_verbose != 0 )
+			{
+				libcnotify_printf(
+				 "%s: reading COW block data at offset: %" PRIi64 " (0x%08" PRIx64 ")\n",
+				 function,
+				 file_offset,
+				 file_offset );
+
+				libcnotify_printf(
+				 "\n" );
+			}
+#endif
 			read_count = libbfio_pool_read_buffer_at_offset(
 			              internal_handle->data_file_io_pool,
 			              internal_handle->cow_file_io_pool_entry,
@@ -2272,16 +2286,29 @@ ssize_t libbfoverlay_internal_handle_read_buffer(
 				 "%s: unable to read COW block of size: %" PRIzd " from COW file at offset %" PRIi64 " (0x%08" PRIx64 ").",
 				 function,
 				 internal_handle->cow_file->block_size,
-				 cow_block_offset,
-				 cow_block_offset );
+				 file_offset,
+				 file_offset );
 
 				return( -1 );
 			}
-			cow_block_offset = (size_t) ( internal_handle->current_offset - cow_block_start_offset );
-
-			if( (int64_t) read_size > ( cow_block_end_offset - internal_handle->current_offset ) )
+#if defined( HAVE_DEBUG_OUTPUT )
+			if( libcnotify_verbose != 0 )
 			{
-				read_size = (size_t) ( cow_block_end_offset - internal_handle->current_offset );
+				libcnotify_printf(
+				 "%s: COW block data:\n",
+				 function );
+				libcnotify_print_data(
+				 internal_handle->cow_block_data,
+				 internal_handle->cow_file->block_size,
+				 0 );
+			}
+#endif
+			cow_block_offset = (size_t) ( internal_handle->current_offset % internal_handle->cow_file->block_size );
+			cow_block_size   = internal_handle->cow_file->block_size - cow_block_offset;
+
+			if( read_size > cow_block_size )
+			{
+				read_size = cow_block_size;
 			}
 			if( memory_copy(
 			     &( buffer[ buffer_offset ] ),
@@ -2379,6 +2406,19 @@ ssize_t libbfoverlay_internal_handle_read_buffer(
 			else
 			{
 				file_offset = range->data_file_offset + ( internal_handle->current_offset - range->start_offset );
+#if defined( HAVE_DEBUG_OUTPUT )
+				if( libcnotify_verbose != 0 )
+				{
+					libcnotify_printf(
+					 "%s: reading data at offset: %" PRIi64 " (0x%08" PRIx64 ")\n",
+					 function,
+					 file_offset,
+					 file_offset );
+
+					libcnotify_printf(
+					 "\n" );
+				}
+#endif
 
 				read_count = libbfio_pool_read_buffer_at_offset(
 				              internal_handle->data_file_io_pool,
@@ -2623,6 +2663,7 @@ ssize_t libbfoverlay_internal_handle_write_buffer(
 	static char *function          = "libbfoverlay_internal_handle_write_buffer";
 	size_t buffer_offset           = 0;
 	size_t cow_block_offset        = 0;
+	size_t cow_block_size          = 0;
 	size_t write_size              = 0;
 	ssize_t read_count             = 0;
 	ssize_t write_count            = 0;
@@ -2639,6 +2680,17 @@ ssize_t libbfoverlay_internal_handle_write_buffer(
 		 LIBCERROR_ERROR_DOMAIN_ARGUMENTS,
 		 LIBCERROR_ARGUMENT_ERROR_INVALID_VALUE,
 		 "%s: invalid handle.",
+		 function );
+
+		return( -1 );
+	}
+	if( internal_handle->cow_file == NULL )
+	{
+		libcerror_error_set(
+		 error,
+		 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+		 LIBCERROR_RUNTIME_ERROR_VALUE_MISSING,
+		 "%s: invalid handle - missing COW file.",
 		 function );
 
 		return( -1 );
@@ -2720,6 +2772,18 @@ ssize_t libbfoverlay_internal_handle_write_buffer(
 
 			return( -1 );
 		}
+		if( ( internal_handle->cow_file->block_size == 0 )
+		 || ( internal_handle->cow_file->block_size > (size_t) MEMORY_MAXIMUM_ALLOCATION_SIZE ) )
+		{
+			libcerror_error_set(
+			 error,
+			 LIBCERROR_ERROR_DOMAIN_RUNTIME,
+			 LIBCERROR_RUNTIME_ERROR_VALUE_OUT_OF_BOUNDS,
+			 "%s: invalid handle - invalid COW file - block size value out of bounds.",
+			 function );
+
+			return( -1 );
+		}
 		read_count = libbfoverlay_internal_handle_read_buffer(
 			      internal_handle,
 		              internal_handle->cow_block_data,
@@ -2756,13 +2820,14 @@ ssize_t libbfoverlay_internal_handle_write_buffer(
 		}
 		internal_handle->current_offset = safe_current_offset;
 
-		cow_block_offset = (size_t) ( internal_handle->current_offset - cow_block_start_offset );
+		cow_block_offset = (size_t) ( internal_handle->current_offset % internal_handle->cow_file->block_size );
+		cow_block_size   = internal_handle->cow_file->block_size - cow_block_offset;
 
 		write_size = buffer_size - buffer_offset;
 
-		if( (int64_t) write_size > ( cow_block_end_offset - internal_handle->current_offset ) )
+		if( write_size > cow_block_size )
 		{
-			write_size = (size_t) ( cow_block_end_offset - internal_handle->current_offset );
+			write_size = cow_block_size;
 		}
 		if( memory_copy(
 		     &( ( internal_handle->cow_block_data )[ cow_block_offset ] ),

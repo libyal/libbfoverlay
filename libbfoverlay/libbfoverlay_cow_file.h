@@ -47,11 +47,11 @@ struct libbfoverlay_cow_file
 
 	/* Number of allocated blocks
 	 */
-	uint32_t number_of_allocated_blocks;
+	uint64_t number_of_allocated_blocks;
 
 	/* Last block number used to store data or metadata
 	 */
-	uint32_t last_data_block_number;
+	uint64_t last_data_block_number;
 
 	/* Offset of the level 1 allocation table
 	 */
@@ -86,12 +86,6 @@ int libbfoverlay_cow_file_set_data_size(
      libbfio_pool_t *file_io_pool,
      int file_io_pool_entry,
      size64_t data_size,
-     libcerror_error_t **error );
-
-int libbfoverlay_cow_file_enlarge_allocation_table(
-     libbfoverlay_cow_file_t *cow_file,
-     libbfio_pool_t *file_io_pool,
-     int file_io_pool_entry,
      libcerror_error_t **error );
 
 int libbfoverlay_cow_file_allocate_block_for_offset(

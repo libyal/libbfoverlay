@@ -173,14 +173,14 @@ int libbfoverlay_cow_allocation_table_block_get_block_number_by_index(
      int file_io_pool_entry,
      off64_t file_offset,
      int entry_index,
-     uint32_t *block_number,
+     uint64_t *block_number,
      libcerror_error_t **error )
 {
 	uint8_t cow_allocation_table_block_entry_data[ sizeof( bfoverlay_cow_allocation_table_block_entry_t ) ];
 
 	static char *function      = "libbfoverlay_cow_allocation_table_block_get_block_number_by_index";
 	ssize_t read_count         = 0;
-	uint32_t safe_block_number = 0;
+	uint64_t safe_block_number = 0;
 
 	if( cow_allocation_table_block == NULL )
 	{
@@ -216,6 +216,7 @@ int libbfoverlay_cow_allocation_table_block_get_block_number_by_index(
 
 		return( -1 );
 	}
+	file_offset += sizeof( bfoverlay_cow_allocation_table_block_header_t );
 	file_offset += entry_index * sizeof( bfoverlay_cow_allocation_table_block_entry_t );
 
 	read_count = libbfio_pool_read_buffer_at_offset(
@@ -240,7 +241,7 @@ int libbfoverlay_cow_allocation_table_block_get_block_number_by_index(
 
 		return( -1 );
 	}
-	byte_stream_copy_to_uint32_big_endian(
+	byte_stream_copy_to_uint64_big_endian(
 	 cow_allocation_table_block_entry_data,
 	 safe_block_number );
 
@@ -258,7 +259,7 @@ int libbfoverlay_cow_allocation_table_block_set_block_number_by_index(
      int file_io_pool_entry,
      off64_t file_offset,
      int entry_index,
-     uint32_t block_number,
+     uint64_t block_number,
      uint8_t write_header,
      libcerror_error_t **error )
 {
@@ -357,11 +358,12 @@ int libbfoverlay_cow_allocation_table_block_set_block_number_by_index(
 			return( -1 );
 		}
 	}
-	byte_stream_copy_from_uint32_big_endian(
+	file_offset += sizeof( bfoverlay_cow_allocation_table_block_header_t );
+	file_offset += entry_index * sizeof( bfoverlay_cow_allocation_table_block_entry_t );
+
+	byte_stream_copy_from_uint64_big_endian(
 	 cow_allocation_table_block_entry_data,
 	 block_number );
-
-	file_offset += entry_index * sizeof( bfoverlay_cow_allocation_table_block_entry_t );
 
 	write_count = libbfio_pool_write_buffer_at_offset(
 	              file_io_pool,
